@@ -8,9 +8,17 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const jwt = require('jsonwebtoken')
+// const session = require('express-session');
+const jwt = require('express-jwt');
+const jsonwebtoken = require('jsonwebtoken')
 const jwtSecret = '4999aed3c946f7b0a38edb534aa583628d84e36d10f1c04700770d572af3dce4362ddd'
 const app = express();
+
+// app.use(session({
+//     secret: process.env.SESSION_SECRET,
+//     resave: true,
+//     saveUninitialized: true
+// }));
 
 app.use(helmet());
 
@@ -18,7 +26,13 @@ app.use(helmet());
 app.use(bodyParser.json());
 
 // enabling CORS for all requests
-app.use(cors());
+const corsConfig = {
+    origin: true,
+    credentials: true,
+};
+
+app.use(cors(corsConfig));
+app.options('*', cors(corsConfig));
 
 // adding morgan to log HTTP requests
 app.use(morgan('combined'));
@@ -35,27 +49,6 @@ if (process.env.NODE_ENV === 'development') {
     }));
 }
 
-app.use((request, response, next) => {
-    /*
-    if (!request.headers.token || request.headers.token !== process.env.TOKEN) {
-        response.sendStatus(403).end();
-        return;
-    }*/
-    next();
-});
-
-// app.get('/profile/:id', async function (request, response) {
-//     let profileRef = await firestore.collection('profiles').doc(request.params.username).get();
-//
-//     if (!profileRef.exists) {
-//         return response.send({
-//             error: 'Profile not found',
-//         });
-//     }
-//
-//     return response.send(profileRef.data());
-// });
-
 app.get('/', (req, res) => {
     return res.send({
         timestamp: new Date().getTime(),
@@ -64,34 +57,35 @@ app.get('/', (req, res) => {
 
 app.post('/register', async (req, res, next) => {
     const { username, password } = req.body
-    if (password.length < 6) {
-        return res.status(400).json({ message: "Password less than 6 characters" })
-    }
+    //TODO: check if they are valid
     try {
         const userRef = await firestore.collection('users').doc(username).get();
         if (userRef.exists) {
-            return res.status(400).json({ message: "Username already exists" })
+            return res.status(409).json({ message: "Username already exists" })
         } else {
             await firestore.collection('users').doc(username).set({
                 username: username,
                 password: password,
+                roles: [2001],
                 createdAt: new Date().getTime(),
             });
             const maxAge = 3 * 60 * 60;
-            const token = jwt.sign(
+            const token = jsonwebtoken.sign(
                 { username: username },
                 jwtSecret,
                 {
                     expiresIn: maxAge, // 3hrs in sec
                 }
             );
-            res.cookie("jwt", token, {
-                httpOnly: true,
-                maxAge: maxAge * 1000, // 3hrs in ms
-            });
-            return res.status(201).json({
-                message: "User successfully created",
-                username: username,
+            return res.status(201)
+                .cookie("X-AUTH-TOKEN", token, {
+                    httpOnly: true,
+                    maxAge: maxAge * 1000, // 3hrs in ms
+                })
+                .send({
+                    message: "User successfully created",
+                    username: username,
+                    roles: [2001],
             });
         }
     } catch (err) {
@@ -103,7 +97,7 @@ app.post('/register', async (req, res, next) => {
 })
 
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body
+    const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400).json({ message: "Username or password is missing" })
     }
@@ -120,22 +114,32 @@ app.post('/login', async (req, res) => {
     }
 
     const maxAge = 3 * 60 * 60;
-    const token = jwt.sign(
+    const token = jsonwebtoken.sign(
         { username: user.username },
         jwtSecret,
         {
             expiresIn: maxAge, // 3hrs in sec
         }
     );
-    res.cookie("jwt", token, {
-        httpOnly: true,
-        maxAge: maxAge * 1000, // 3hrs in ms
-    });
-    res.status(200).json({
-        message: "User successfully logged in",
-        username: user.username,
-    });
+    res.status(200)
+        .cookie("X-AUTH-TOKEN", token, {
+            httpOnly: true,
+            maxAge: maxAge * 1000, // 3hrs in ms
+        }).send({
+            message: "User successfully logged in",
+            username: user.username,
+            accessToken: token,
+            roles: user.roles,
+        });
 });
+
+// app.use(jwt({ secret: jwtSecret, algorithms: ['HS256'] }));
+
+// app.get('/protected', (req, res) => {
+//     return res.send({
+//         message: "You are authenticated",
+//     })
+// })
 
 app.listen(parseInt(process.env.HTTP_PORT) || 8080, async () => {
     console.log(`HTTP Server listening on port ${process.env.HTTP_PORT}...`);
