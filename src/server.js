@@ -141,7 +141,7 @@ app.post('/login', async (req, res) => {
 //     })
 // })
 
-app.listen(parseInt(process.env.HTTP_PORT) || 8080, async () => {
-    console.log(`HTTP Server listening on port ${process.env.HTTP_PORT}...`);
+app.listen(parseInt(process.env.PORT) || 8080, async () => {
+    console.log(`HTTP Server listening on port ${process.env.PORT}...`);
 });
 
