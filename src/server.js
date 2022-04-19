@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser')
 // const session = require('express-session');
 const jwt = require('express-jwt');
 const jsonwebtoken = require('jsonwebtoken')
@@ -19,6 +20,7 @@ const app = express();
 //     resave: true,
 //     saveUninitialized: true
 // }));
+app.use(cookieParser())
 
 app.use(helmet());
 
@@ -132,6 +134,22 @@ app.post('/login', async (req, res) => {
             roles: user.roles,
         });
 });
+
+app.get('/refresh', async (req, res) => {
+    try {
+        const accessToken = req.cookies['X-AUTH-TOKEN'];
+        const decoded = jsonwebtoken.verify(accessToken, jwtSecret);
+        const userRef = await firestore.collection('users').doc(decoded.username).get();
+        return res.send({
+            accessToken: accessToken,
+            username: decoded.username,
+            roles: userRef.data().roles,
+        });
+    } catch (err) {
+        return res.sendStatus(401);
+    }
+    return res.sendStatus(401);
+})
 
 // app.use(jwt({ secret: jwtSecret, algorithms: ['HS256'] }));
 
