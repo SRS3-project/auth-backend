@@ -16,7 +16,7 @@ const jwtSecret = '4999aed3c946f7b0a38edb534aa583628d84e36d10f1c04700770d572af3d
 const app = express();
 
 
-// commento di prova (Andrea .S.)
+// commento di prova (Andre .S.)
 
 // app.use(session({
 //     secret: process.env.SESSION_SECRET,
