@@ -15,9 +15,6 @@ const jsonwebtoken = require('jsonwebtoken')
 const jwtSecret = '4999aed3c946f7b0a38edb534aa583628d84e36d10f1c04700770d572af3dce4362ddd'
 const app = express();
 
-
-// commento di prova (Andre .S.)
-
 // app.use(session({
 //     secret: process.env.SESSION_SECRET,
 //     resave: true,
@@ -82,6 +79,18 @@ app.post('/register', async (req, res, next) => {
                     expiresIn: maxAge, // 3hrs in sec
                 }
             );
+
+            await firestore.collection('players').add({
+                username: username,
+                wood: 0,
+                stone: 0,
+                food: 0,
+                warriors: 0,
+                generals: 0,
+                archers: 0,
+                createdAt: new Date().getTime(),
+            });
+
             return res.status(201)
                 .cookie("X-AUTH-TOKEN", token, {
                     httpOnly: true,
