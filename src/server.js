@@ -15,6 +15,9 @@ const jsonwebtoken = require('jsonwebtoken')
 const jwtSecret = '4999aed3c946f7b0a38edb534aa583628d84e36d10f1c04700770d572af3dce4362ddd'
 const app = express();
 
+
+// commento di prova (A.S.)
+
 // app.use(session({
 //     secret: process.env.SESSION_SECRET,
 //     resave: true,
