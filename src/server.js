@@ -76,17 +76,6 @@ app.post('/register', async (req, res, next) => {
             createdAt: new Date().getTime(),
         });
 
-        await firestore.collection('players').add({
-            username: username,
-            wood: 0,
-            stone: 0,
-            food: 0,
-            warriors: 0,
-            generals: 0,
-            archers: 0,
-            createdAt: new Date().getTime(),
-        });
-
         const maxAge = 3 * 60 * 60;
         const token = jsonwebtoken.sign(
             { username: username },
