@@ -14,6 +14,7 @@ const jwt = require('express-jwt');
 const jsonwebtoken = require('jsonwebtoken')
 const jwtSecret = '4999aed3c946f7b0a38edb534aa583628d84e36d10f1c04700770d572af3dce4362ddd'
 const app = express();
+const bcrypt = require('bcrypt');
 
 // app.use(session({
 //     secret: process.env.SESSION_SECRET,
@@ -64,44 +65,48 @@ app.post('/register', async (req, res, next) => {
         const userRef = await firestore.collection('users').doc(username).get();
         if (userRef.exists) {
             return res.status(409).json({ message: "Username already exists" })
-        } else {
-            await firestore.collection('users').doc(username).set({
-                username: username,
-                password: password,
-                roles: [2001],
-                createdAt: new Date().getTime(),
-            });
-            const maxAge = 3 * 60 * 60;
-            const token = jsonwebtoken.sign(
-                { username: username },
-                jwtSecret,
-                {
-                    expiresIn: maxAge, // 3hrs in sec
-                }
-            );
-
-            await firestore.collection('players').add({
-                username: username,
-                wood: 0,
-                stone: 0,
-                food: 0,
-                warriors: 0,
-                generals: 0,
-                archers: 0,
-                createdAt: new Date().getTime(),
-            });
-
-            return res.status(201)
-                .cookie("X-AUTH-TOKEN", token, {
-                    httpOnly: true,
-                    maxAge: maxAge * 1000, // 3hrs in ms
-                })
-                .send({
-                    message: "User successfully created",
-                    username: username,
-                    roles: [2001],
-            });
         }
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        await firestore.collection('users').doc(username).set({
+            username: username,
+            password: passwordHash,
+            roles: [2001],
+            createdAt: new Date().getTime(),
+        });
+
+        await firestore.collection('players').add({
+            username: username,
+            wood: 0,
+            stone: 0,
+            food: 0,
+            warriors: 0,
+            generals: 0,
+            archers: 0,
+            createdAt: new Date().getTime(),
+        });
+
+        const maxAge = 3 * 60 * 60;
+        const token = jsonwebtoken.sign(
+            { username: username },
+            jwtSecret,
+            {
+                expiresIn: maxAge, // 3hrs in sec
+            }
+        );
+
+        return res.status(201)
+            .cookie("X-AUTH-TOKEN", token, {
+                httpOnly: true,
+                maxAge: maxAge * 1000, // 3hrs in ms
+            })
+            .send({
+                message: "User successfully created",
+                username: username,
+                roles: [2001],
+        });
     } catch (err) {
         return res.status(401).send({
             message: "User not successful created",
@@ -117,13 +122,13 @@ app.post('/login', async (req, res) => {
     }
 
     const userRef = await firestore.collection('users').doc(username).get();
-
     if (!userRef.exists) {
         return res.sendStatus(401);
     }
 
     const user = userRef.data();
-    if (user.password !== req.body.password) {
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
         return res.sendStatus(401);
     }
 
