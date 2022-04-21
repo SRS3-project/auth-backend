@@ -12,7 +12,6 @@ const cookieParser = require('cookie-parser')
 // const session = require('express-session');
 const jwt = require('express-jwt');
 const jsonwebtoken = require('jsonwebtoken')
-const jwtSecret = '4999aed3c946f7b0a38edb534aa583628d84e36d10f1c04700770d572af3dce4362ddd'
 const app = express();
 const bcrypt = require('bcrypt');
 
@@ -91,7 +90,7 @@ app.post('/register', async (req, res, next) => {
         const maxAge = 3 * 60 * 60;
         const token = jsonwebtoken.sign(
             { username: username },
-            jwtSecret,
+            process.env.JWT_SECRET,
             {
                 expiresIn: maxAge, // 3hrs in sec
             }
@@ -135,7 +134,7 @@ app.post('/login', async (req, res) => {
     const maxAge = 3 * 60 * 60;
     const token = jsonwebtoken.sign(
         { username: user.username },
-        jwtSecret,
+        process.env.JWT_SECRET,
         {
             expiresIn: maxAge, // 3hrs in sec
         }
@@ -155,7 +154,7 @@ app.post('/login', async (req, res) => {
 app.get('/refresh', async (req, res) => {
     try {
         const accessToken = req.cookies['X-AUTH-TOKEN'];
-        const decoded = jsonwebtoken.verify(accessToken, jwtSecret);
+        const decoded = jsonwebtoken.verify(accessToken, process.env.JWT_SECRET);
         const userRef = await firestore.collection('users').doc(decoded.username).get();
         return res.send({
             accessToken: accessToken,
