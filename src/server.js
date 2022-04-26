@@ -103,10 +103,23 @@ app.post('/register', async (req, res, next) => {
     }
 })
 
+app.get('/forgotpassword', async (req, res) => {
+    const { email } = req.body;
+
+    const userRef = await firestore.collection('users').doc(username).get();
+    if (!userRef.exists) {
+        //per evitare l'enumerazione di tutti gli account, inviamo un messaggio generico
+        return res.sendStatus(401).json({ message: "If that email address is in our database, we will send you an email to reset your password"});
+    }
+
+
+    
+})
+
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
-        return res.status(400).json({ message: "Username or password is missing" })
+        return res.status(400).json({ message: "Login Failed: invalid username or password" })
     }
 
     const userRef = await firestore.collection('users').doc(username).get();
@@ -117,7 +130,7 @@ app.post('/login', async (req, res) => {
     const user = userRef.data();
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-        return res.sendStatus(401);
+        return res.sendStatus(401).json({ message: "Login Failed: invalid username or password"})
     }
 
     const maxAge = 3 * 60 * 60;
@@ -155,6 +168,8 @@ app.get('/refresh', async (req, res) => {
     }
     return res.sendStatus(401);
 })
+
+
 
 // app.use(jwt({ secret: jwtSecret, algorithms: ['HS256'] }));
 
