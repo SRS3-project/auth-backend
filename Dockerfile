@@ -1,5 +1,5 @@
 FROM node:17-alpine AS builder
-WORKDIR /usr/src/backend
+WORKDIR /usr/src/auth-backend
 
 COPY . .
 

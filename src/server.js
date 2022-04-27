@@ -167,4 +167,3 @@ app.get('/refresh', async (req, res) => {
 app.listen(parseInt(process.env.PORT) || 8080, async () => {
     console.log(`HTTP Server listening on port ${process.env.PORT}...`);
 });
-
