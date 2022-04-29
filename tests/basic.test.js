@@ -41,6 +41,40 @@ const firestore = require('./../utils/firestore');
     .expect(409)
     
 })
+
+it('void password sends back 400', async() => {
+  const res = await request.post('/login')
+  .auth('asalvucci2','')
+  .set('Accept','application/json')
+  .expect('Content-Type', /json/)
+  .expect(400)
+  
+})
+
+it('void username sends back 400', async() => {
+  const res = await request.post('/login')
+  .auth('','password')
+  .set('Accept','application/json')
+  .expect('Content-Type', /json/)
+  .expect(400)
+})
+
+it('right username and password', async() => {
+  const res = await request.post('/login')
+  .auth('andreasalvucci','Dioporco123!')
+  .set('Accept','application/json')
+  .expect('Content-Type', /json/)
+  .expect(200)
+})
+
+it('wrong username and password', async() => {
+  const res = await request.post('/login')
+  .auth('andreasalvucci','passwordsbagliata')
+  .set('Accept','application/json')
+  .expect('Content-Type', /json/)
+  .expect(401)
+})
+
   
 
 

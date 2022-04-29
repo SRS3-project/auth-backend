@@ -97,6 +97,7 @@ app.post('/register', async (req, res, next) => {
                 roles: [2001],
         });
     } catch (err) {
+        console.log(err);
         return res.status(401).send({
             message: "User not successful created",
             error: err.message,
