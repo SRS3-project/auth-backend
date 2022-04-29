@@ -14,6 +14,7 @@ const jwt = require('express-jwt');
 const jsonwebtoken = require('jsonwebtoken')
 const app = express();
 const bcrypt = require('bcrypt');
+module.exports = app
 
 // app.use(session({
 //     secret: process.env.SESSION_SECRET,
