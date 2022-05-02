@@ -121,10 +121,10 @@ it('POST /register void password sends back 400 Bad Request', async() => {
     .expect('Content-Type', /json/)
     expect(res.body.message).toBe("User not successfully created")
   })
-
+  
   })
 
-  
+
 
   describe('POST /login', () =>{
 
