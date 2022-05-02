@@ -123,7 +123,7 @@ app.get('/forgotpassword', async (req, res) => {
     const userRef = await firestore.collection('users').doc(username).get();
     if (!userRef.exists) {
         //per evitare l'enumerazione di tutti gli account, inviamo un messaggio generico
-        return res.sendStatus(401).json({ message: "If that email address is in our database, we will send you an email to reset your password"});
+        return res.status(401).json({ message: "If that email address is in our database, we will send you an email to reset your password"});
     }
 
 
@@ -133,18 +133,20 @@ app.get('/forgotpassword', async (req, res) => {
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
-        return res.sendStatus(400).json({ message: "Login Failed: invalid username or password" })
+        console.log("Username or password are blank!")
+        res.status(400).json({ message: "Login Failed: invalid username or password" })
+        return
     }
 
     const userRef = await firestore.collection('users').doc(username).get();
     if (!userRef.exists) {
-        return res.sendStatus(401);
+        return res.status(401).json({ message: "Login Failed: invalid username or password"});
     }
 
     const user = userRef.data();
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-        return res.sendStatus(401).json({ message: "Login Failed: invalid username or password"})
+        return res.status(401).json({ message: "Login Failed: invalid username or password"})
     }
 
     const maxAge = 3 * 60 * 60;
