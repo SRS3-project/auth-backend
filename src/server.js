@@ -58,20 +58,38 @@ app.get('/', (req, res) => {
     })
 })
 
-app.post('/register', async (req, res, next) => {
+app.post('/register', async (req, res) => {
     const { username, password } = req.body
     //TODO: check if they are valid
 
+    if(!req.body){
+        console.log("Username or password is blank, sending 400...")
+         res.status(400)
+        .json({message:"Username or password not properly formatted"})
+        return
 
-    if(!password){
-        return res.status(400).json({message:"Password is undefined!"})
     }
 
-    if(req.body.password.length<8){
-        console.log("PASSWORD TOO SHORT")
-        return res.status(400).json({message: "Password should be at least 8 characters long"})
+
+    if(username.length==0){
+        console.log("Username or password is blank, sending 400...")
+         res.status(400)
+        .json({message:"Username or password not properly formatted"})
+        return
     }
-    //minimum length of password should be 8 characters
+
+    if(password.length<8){
+         res.status(400)
+        .send({message: "Username or password not properly formatted"})
+        return
+    }
+    if(password.length > 24){
+        res.status(400)
+       .send({message: "Username or password not properly formatted"})
+       return
+   }
+
+
 
     try {
         const userRef = await firestore.collection('users').doc(username).get();
@@ -109,9 +127,8 @@ app.post('/register', async (req, res, next) => {
                 roles: [2001],
         });
     } catch (err) {
-        console.log(err.message);
         return res.status(401).send({
-            message: "User not successful created",
+            message: "User not successfully created",
             error: err.message,
         })
     }
@@ -123,7 +140,7 @@ app.get('/forgotpassword', async (req, res) => {
     const userRef = await firestore.collection('users').doc(username).get();
     if (!userRef.exists) {
         //per evitare l'enumerazione di tutti gli account, inviamo un messaggio generico
-        return res.status(401).json({ message: "If that email address is in our database, we will send you an email to reset your password"});
+        return res.status(401)({ message: "If that email address is in our database, we will send you an email to reset your password"});
     }
 
 
@@ -133,20 +150,27 @@ app.get('/forgotpassword', async (req, res) => {
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
-        console.log("Username or password are blank!")
-        res.status(400).json({ message: "Login Failed: invalid username or password" })
-        return
+        return res.status(400)
+        .json({ 
+            message: "Login failed: invalid username or password"
+         })
     }
 
     const userRef = await firestore.collection('users').doc(username).get();
     if (!userRef.exists) {
-        return res.status(401).json({ message: "Login Failed: invalid username or password"});
+        return res.status(401)
+        .json({
+            message: "Login failed: invalid username or password"
+        });
     }
 
     const user = userRef.data();
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-        return res.status(401).json({ message: "Login Failed: invalid username or password"})
+         return res.status(401)
+         .json({
+             message: "Login failed: invalid username or password"
+            })
     }
 
     const maxAge = 3 * 60 * 60;
