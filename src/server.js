@@ -63,7 +63,6 @@ app.post('/register', async (req, res) => {
     //TODO: check if they are valid
 
     if(!req.body){
-        console.log("Username or password is blank, sending 400...")
          res.status(400)
         .json({message:"Username or password not properly formatted"})
         return
@@ -72,7 +71,6 @@ app.post('/register', async (req, res) => {
 
 
     if(username.length==0){
-        console.log("Username or password is blank, sending 400...")
          res.status(400)
         .json({message:"Username or password not properly formatted"})
         return
