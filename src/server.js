@@ -61,6 +61,18 @@ app.get('/', (req, res) => {
 app.post('/register', async (req, res, next) => {
     const { username, password } = req.body
     //TODO: check if they are valid
+
+
+    if(!password){
+        return res.status(400).json({message:"Password is undefined!"})
+    }
+
+    if(req.body.password.length<8){
+        console.log("PASSWORD TOO SHORT")
+        return res.status(400).json({message: "Password should be at least 8 characters long"})
+    }
+    //minimum length of password should be 8 characters
+
     try {
         const userRef = await firestore.collection('users').doc(username).get();
         if (userRef.exists) {
@@ -97,7 +109,7 @@ app.post('/register', async (req, res, next) => {
                 roles: [2001],
         });
     } catch (err) {
-        console.log(err);
+        console.log(err.message);
         return res.status(401).send({
             message: "User not successful created",
             error: err.message,
@@ -121,7 +133,7 @@ app.get('/forgotpassword', async (req, res) => {
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
-        return res.status(400).json({ message: "Login Failed: invalid username or password" })
+        return res.sendStatus(400).json({ message: "Login Failed: invalid username or password" })
     }
 
     const userRef = await firestore.collection('users').doc(username).get();
