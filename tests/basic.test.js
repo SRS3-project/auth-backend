@@ -112,7 +112,7 @@ it('POST /register void password', async() => {
     
     it('POST /login void username', async() => {
       const credenziali = {
-        username: "johndoe",
+        username: "",
         password: "123"
       }
       const res = await request.post('/login')
