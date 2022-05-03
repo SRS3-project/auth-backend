@@ -30,6 +30,7 @@
     "winston": "^3.7.2"
   },
   "devDependencies": {
+    "email-validator": "^2.0.4",
     "firestore-jest-mock": "^0.17.0",
     "jest": "^28.0.2",
     "mocha": "^9.2.2",

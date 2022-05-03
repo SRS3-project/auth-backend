@@ -71,6 +71,7 @@ it('POST /register void password sends back 400 Bad Request', async() => {
   
 })
 
+
   it('POST /register username already exists', async() =>{
     const credenziali = {
       username: "asalvucci2",
@@ -84,7 +85,6 @@ it('POST /register void password sends back 400 Bad Request', async() => {
     .expect(409)
     expect(res.body.message).toBe('Username already exists')
   })
-
 
   it('POST /register password too short', async()=>{
     const credenziali = {
@@ -121,7 +121,51 @@ it('POST /register void password sends back 400 Bad Request', async() => {
     .expect('Content-Type', /json/)
     expect(res.body.message).toBe("User not successfully created")
   })
-  
+  })
+
+
+  describe('POST /forgotpassword', ()=>{
+
+    it('POST /forgotpassword blank email', async()=>{
+      const credenziali = {
+        email: ""
+      }
+      const res = await request.post('/forgotpassword')
+    .set('Accept', 'application/json')
+    .send(credenziali)
+    .expect('Content-Type', /json/)
+    .expect(400)
+    expect(res.body.message).toBe("E-mail field must not be blank")
+
+    })
+
+    it('POST /forgotpassword email missing domain', async()=>{
+      const credenziali = {
+        email: "johndoe24@gmail"
+      }
+      const res = await request.post('/forgotpassword')
+    .set('Accept', 'application/json')
+    .send(credenziali)
+    .expect('Content-Type', /json/)
+    .expect(400)
+    expect(res.body.message).toBe("Not a valid e-mail address")
+
+    })
+
+    it('POST /forgotpassword email missing server', async()=>{
+      const credenziali = {
+        email: "johndoe24"
+      }
+      const res = await request.post('/forgotpassword')
+    .set('Accept', 'application/json')
+    .send(credenziali)
+    .expect('Content-Type', /json/)
+    .expect(400)
+    expect(res.body.message).toBe("Not a valid e-mail address")
+
+    })
+
+
   })
 
 

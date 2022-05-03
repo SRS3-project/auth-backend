@@ -14,13 +14,9 @@ const jwt = require('express-jwt');
 const jsonwebtoken = require('jsonwebtoken')
 const app = express();
 const bcrypt = require('bcrypt');
+var validator = require("email-validator");
 module.exports = app
 
-// app.use(session({
-//     secret: process.env.SESSION_SECRET,
-//     resave: true,
-//     saveUninitialized: true
-// }));
 app.use(cookieParser())
 
 app.use(helmet());
@@ -62,13 +58,9 @@ app.post('/register', async (req, res) => {
     const { username, password } = req.body
     //TODO: check if they are valid
 
-    if(!req.body){
-         res.status(400)
-        .json({message:"Username or password not properly formatted"})
-        return
-
+    if (!username || !password) {
+        return res.status(400).json({message:"Username or password not properly formatted"})
     }
-
 
     if(username.length==0){
          res.status(400)
@@ -88,12 +80,14 @@ app.post('/register', async (req, res) => {
    }
 
 
-
+   // E' la get() che non funziona
     try {
+        
         const userRef = await firestore.collection('users').doc(username).get();
         if (userRef.exists) {
             return res.status(409).json({ message: "Username already exists" })
         }
+        
 
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
@@ -125,6 +119,8 @@ app.post('/register', async (req, res) => {
                 roles: [2001],
         });
     } catch (err) {
+        console.log("--------ERRORE DI REGISTRAZIONE----------")
+        console.log(err)
         return res.status(401).send({
             message: "User not successfully created",
             error: err.message,
@@ -132,20 +128,64 @@ app.post('/register', async (req, res) => {
     }
 })
 
-app.get('/forgotpassword', async (req, res) => {
-    const { email } = req.body;
+app.post('/forgotpassword', async (req, res) => {
 
-    const userRef = await firestore.collection('users').doc(username).get();
+    if(!req.body){
+        res.status(400).json({message:"E-mail field must not be blank"})
+        return
+    }
+
+    const { email } = req.body;
+    console.log("EMAIL: " + email)
+    if(email==undefined){
+        res.status(400).json({message:"E-mail field must not be blank"})
+        return
+
+    }
+    if(email==""){
+        res.status(400).json({ message:"E-mail field must not be blank" })
+        return
+   }
+
+
+    if(!validator.validate(email)){
+        res.status(400).json({message:"Not a valid e-mail address"})
+        return
+
+    }
+
+    try{
+        const userRef = await firestore.collection('users').doc(username).get();
     if (!userRef.exists) {
         //per evitare l'enumerazione di tutti gli account, inviamo un messaggio generico
-        return res.status(401)({ message: "If that email address is in our database, we will send you an email to reset your password"});
+         res.status(200)({ message: "If that email address is in our database, we will send you an email to reset your password"});
+         return
     }
+
+    }
+    catch(err){
+        console.log("------ERRORE FORGOT PASSWORD-----")
+        console.log(email)
+        console.log(err)
+        res.status(500).json({message:"Errore del server"})
+        return
+
+    }
+    
 
 
     
 })
 
 app.post('/login', async (req, res) => {
+/*
+    if(!req.body){
+
+        return res.status(400)
+        .json({ 
+            message: "Login failed: invalid username or password"
+         })
+    }
     const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400)
@@ -154,7 +194,31 @@ app.post('/login', async (req, res) => {
          })
     }
 
-    const userRef = await firestore.collection('users').doc(username).get();
+    if(username==undefined || password == undefined){
+        return res.status(400)
+        .json({ 
+            message: "Login failed: invalid username or password"
+         })
+
+    }*/
+
+    const { username, password } = req.body;
+
+    if(username == "" || password == ""){
+        return res.status(400)
+        .json({  
+            message: "Login failed: invalid username or password"
+         })
+    }
+    if (!username || !password) {
+        return res.status(400)
+        .json({ 
+            message: "Login failed: invalid username or password"
+         })
+    }
+
+    try{
+        const userRef = await firestore.collection('users').doc(username).get();
     if (!userRef.exists) {
         return res.status(401)
         .json({
@@ -189,6 +253,21 @@ app.post('/login', async (req, res) => {
             accessToken: token,
             roles: user.roles,
         });
+
+    }
+
+    catch (err) {
+        console.log("-----------ERRORE DI LOGIN-------")
+        console.log(username)
+        console.log(password)
+        console.log(err)
+        return res.status(500).send({
+            message: "User not successfully logged in",
+            error: err.message,
+        })
+    }
+
+    
 });
 
 app.get('/refresh', async (req, res) => {
@@ -206,17 +285,6 @@ app.get('/refresh', async (req, res) => {
     }
     return res.sendStatus(401);
 })
-
-
-
-// app.use(jwt({ secret: jwtSecret, algorithms: ['HS256'] }));
-
-// app.get('/protected', (req, res) => {
-//     return res.send({
-//         message: "You are authenticated",
-//     })
-// })
-
 app.listen(parseInt(process.env.PORT) || 8080, async () => {
     console.log(`HTTP Server listening on port ${process.env.PORT}...`);
 });
