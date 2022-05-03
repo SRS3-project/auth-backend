@@ -58,6 +58,10 @@ app.post('/register', async (req, res) => {
     const { username, password } = req.body
     //TODO: check if they are valid
 
+    if(!req.body){
+        return res.status(400).json({message:"Username or password not properly formatted"})
+    }
+
     if (!username || !password) {
         return res.status(400).json({message:"Username or password not properly formatted"})
     }
@@ -178,7 +182,7 @@ app.post('/forgotpassword', async (req, res) => {
 })
 
 app.post('/login', async (req, res) => {
-/*
+
     if(!req.body){
 
         return res.status(400)
@@ -186,7 +190,7 @@ app.post('/login', async (req, res) => {
             message: "Login failed: invalid username or password"
          })
     }
-    const { username, password } = req.body;
+/*
     if (!username || !password) {
         return res.status(400)
         .json({ 

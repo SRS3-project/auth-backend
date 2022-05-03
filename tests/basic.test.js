@@ -28,6 +28,15 @@ describe('GET /', () =>{
 
   describe('POST /register', () => {
 
+    it('POST /register with no body must throw a bad request', async() => {
+      const res = await request.post('/register')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(400)
+       expect(res.body.message).toBe("Username or password not properly formatted")
+      
+  })
+
     it('POST /register void username and password sends back 400 bad Request', async() => {
       const credenziali = {
         username: "",
@@ -126,6 +135,15 @@ it('POST /register void password sends back 400 Bad Request', async() => {
 
   describe('POST /forgotpassword', ()=>{
 
+    it('POST /register with no body must throw a bad request', async() => {
+      const res = await request.post('/forgotpassword')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(400)
+       expect(res.body.message).toBe("E-mail field must not be blank")
+      
+  })
+
     it('POST /forgotpassword blank email', async()=>{
       const credenziali = {
         email: ""
@@ -171,6 +189,16 @@ it('POST /register void password sends back 400 Bad Request', async() => {
 
 
   describe('POST /login', () =>{
+
+
+    it('POST /login with no body must throw a bad request', async() => {
+      const res = await request.post('/login')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(400)
+       expect(res.body.message).toBe("Login failed: invalid username or password")
+      
+  })
 
     it('POST /login void password', async() => {
       const credenziali = {
@@ -231,10 +259,6 @@ it('POST /register void password sends back 400 Bad Request', async() => {
        expect(res.body.accessToken).toBeDefined()
        expect(res.body.roles).toBeDefined();
     })
-    
-    
-
-
   })
 
 
