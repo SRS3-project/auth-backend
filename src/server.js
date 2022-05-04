@@ -15,6 +15,8 @@ const jsonwebtoken = require('jsonwebtoken')
 const app = express();
 const bcrypt = require('bcrypt');
 var validator = require("email-validator");
+const crypto = require("crypto");
+const nodemailer=require("nodemailer");
 module.exports = app
 
 app.use(cookieParser())
@@ -153,6 +155,11 @@ app.post('/register', async (req, res) => {
     }
 })
 
+app.post('/resetpassword', async (req,res)=>{
+
+
+})
+
 app.post('/forgotpassword', async (req, res) => {
 
     if(!req.body){
@@ -186,18 +193,52 @@ app.post('/forgotpassword', async (req, res) => {
            if(!snapshot.empty){
                // la mail è stata trovata
                snapshot.forEach(doc => {
-                console.log(doc.id, '=>', doc.data());
                  usernameTrovato = doc.id
               });
 
               //testato funziona
+
+              let resetToken = crypto.randomBytes(32).toString("hex");
+              console.log("##### ResetToken: "+resetToken);
+              let url="http://localhost:8081/resetpassword?token="+resetToken
+
+              let transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                  user: "progettosrs3@gmail.com",
+                  pass: "Progettosrs3_",
+                },
+              });
+              urlHtml='"'+url+'"'
+              var html = "<h1>Password reset procedure</h1><p>Hello from SRS3! It looks like you requested to reset your password.</p><blockquote><p>Please follow this <a href="+urlHtml+">link</a> to complete the procedure.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>"+url+"</h4><p>You didn't ask to reset your password? E sti cazzi!</p>"
+              console.log(html)
+              let mailOptions = {
+                from: 'progettosrs3@gmail.com',
+                to: email,
+                subject: 'Password reset',
+                html: html,
+              };
+              
+              transporter.sendMail(mailOptions, function (err, info) {
+                if (err) {
+                    console.log(err)
+                  res.json(err);
+                } else {
+                    console.log(info)
+                  res.json(info);
+                }
+              });
+            
+              return res.status(200).json({ message: resetToken})
+
+              
+              
             
            }
 
            //la mail non è stata trovata, in ogni caso inviamo lo stesso messaggio
 
-        return res.status(200).json({ message: "If that e-mail is in our database, we will send a link to reset your password" })
-
+           return res.status(200).json({ message: resetToken})
     }
     catch(err){
         console.log("------ERRORE FORGOT PASSWORD-----")
