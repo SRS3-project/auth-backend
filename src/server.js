@@ -156,9 +156,15 @@ app.post('/register', async (req, res) => {
 })
 
 app.post('/resetpassword', async (req,res)=>{
+
+    //ATTENZIONE:invalidare il token quando è stato già usato
     var token = req.query.token;
 
     if(!token){
+        return res.status(401).json({message:"Unauthorized"})
+    }
+
+    if(token.length<64){
         return res.status(401).json({message:"Unauthorized"})
     }
 
@@ -167,10 +173,12 @@ app.post('/resetpassword', async (req,res)=>{
 
 
     if(!tokenRef.exists){
-        return res.status(404).json({message:"Not found"})
+        return res.status(401).json({message:"Unauthorized"})
     }
     else{
+        //invalida qui il token. Come?
         usernameTrovato = tokenRef.data().username
+
 
         return res.status(200).json({message:"mi è arrivato il token per il reset di "+usernameTrovato})
     }
