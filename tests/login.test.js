@@ -1,3 +1,10 @@
+const supertest = require('supertest')
+const serverUrl = "localhost:8081"
+let request = require('supertest')
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+request = request(serverUrl); 
 describe('POST /login', () =>{
 
 
