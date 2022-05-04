@@ -33,12 +33,12 @@ describe('GET /', () =>{
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(400)
-       expect(res.body.message).toBe("Username or password not properly formatted")
       
   })
 
     it('POST /register void username and password sends back 400 bad Request', async() => {
       const credenziali = {
+        email: "andrea@gmail.it",
         username: "",
         password: "123"
       }
@@ -53,6 +53,7 @@ describe('GET /', () =>{
 
   it('POST /register void username sends back 400 Bad Request', async() => {
     const credenziali = {
+      email: "andrea@salvuccimail.it",
       username: "",
       password: "123"
     }
@@ -65,8 +66,38 @@ describe('GET /', () =>{
     
 })
 
+it('POST /register void email sends back 400 Bad Request', async() => {
+  const credenziali = {
+    email: "",
+    username: "username",
+    password: "123"
+  }
+  const res = await request.post('/register')
+  .set('Accept', 'application/json')
+  .send(credenziali)
+  .expect('Content-Type', /json/)
+  .expect(400)
+   expect(res.body.message).toBe("Email must not be blank")
+  
+})
+it('POST /register not valid email sends back 400 Bad Request', async() => {
+  const credenziali = {
+    email: "andrea@.it",
+    username: "username",
+    password: "123"
+  }
+  const res = await request.post('/register')
+  .set('Accept', 'application/json')
+  .send(credenziali)
+  .expect('Content-Type', /json/)
+  .expect(400)
+   expect(res.body.message).toBe("Not a valid email")
+  
+})
+
 it('POST /register void password sends back 400 Bad Request', async() => {
   const credenziali = {
+    email: "andrea@salvuccimail.it",
     username: "johndoe",
     password: ""
   }
@@ -82,7 +113,10 @@ it('POST /register void password sends back 400 Bad Request', async() => {
 
 
   it('POST /register username already exists', async() =>{
+    var suffissoRandom = Math.floor(Math.random() * 1000000)
+    emailCreata = "andrea.salvuccimail"+suffissoRandom+"@salvuccimail.it"
     const credenziali = {
+      email: emailCreata,
       username: "asalvucci2",
       password: "Dioporco123!"
     }
@@ -95,8 +129,24 @@ it('POST /register void password sends back 400 Bad Request', async() => {
     expect(res.body.message).toBe('Username already exists')
   })
 
+  it('POST /register email already exists', async() => {
+    const credenziali = {
+      email: "andrea@miaemailspeciale.it",
+      username: "nuovousernamediverso2",
+      password: "Dioporco123!"
+    }
+    const res = await request.post('/register')
+    .set('Accept', 'application/json')
+    .send(credenziali)
+    .expect('Content-Type', /json/)
+    .expect(409)
+    expect(res.body.message).toBe('An account with that e-mail address already exists!')
+    
+})
+
   it('POST /register password too short', async()=>{
     const credenziali = {
+      email: "andrea@salvuccimail.it",
       username: "johndoe",
       password: "123"
     }
@@ -109,6 +159,7 @@ it('POST /register void password sends back 400 Bad Request', async() => {
 
   it('POST /register password too long (over 24 characters', async()=>{
     const credenziali = {
+      email: "andrea@salvuccimail.it",
       username: "johndoe",
       password: "1234567890123456789012345"
     }
@@ -121,6 +172,7 @@ it('POST /register void password sends back 400 Bad Request', async() => {
 
   it('POST /register password too weak', async()=>{
     const credenziali = {
+      email: "andrea@salvuccimail.it",
       username: "johndoe24",
       password: "password"
     }
@@ -128,7 +180,7 @@ it('POST /register void password sends back 400 Bad Request', async() => {
     .set('Accept', 'application/json')
     .send(credenziali)
     .expect('Content-Type', /json/)
-    expect(res.body.message).toBe("User not successfully created")
+    expect(res.body.message).toBe("Username or password not properly formatted")
   })
   })
 
@@ -181,6 +233,18 @@ it('POST /register void password sends back 400 Bad Request', async() => {
     .expect(400)
     expect(res.body.message).toBe("Not a valid e-mail address")
 
+    })
+
+    it('POST /forgotpassword email trovata manda 200', async()=>{
+      const credenziali = {
+        email: "andrea@nuovamiasemailspeciale.it"
+      }
+      const res = await request.post('/forgotpassword')
+    .set('Accept', 'application/json')
+    .send(credenziali)
+    .expect('Content-Type', /json/)
+    .expect(200)
+    expect(res.body.message).toBe("If that e-mail is in our database, we will send a link to reset your password")
     })
 
 

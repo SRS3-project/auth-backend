@@ -55,11 +55,19 @@ app.get('/', (req, res) => {
 })
 
 app.post('/register', async (req, res) => {
-    const { username, password } = req.body
+    const { email, username, password } = req.body
     //TODO: check if they are valid
 
     if(!req.body){
         return res.status(400).json({message:"Username or password not properly formatted"})
+    }
+
+    if(!email){
+        return res.status(400).json({message:"Email must not be blank"})
+    }
+
+    if(!validator.validate(email)){
+        return res.status(400).json({message:"Not a valid email"})
     }
 
     if (!username || !password) {
@@ -69,6 +77,15 @@ app.post('/register', async (req, res) => {
     if(username.length==0){
          res.status(400)
         .json({message:"Username or password not properly formatted"})
+        return
+    }
+
+    const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%]).{8,24}$/;
+    const regex = new RegExp(PWD_REGEX)
+
+    if(!regex.test(password)){
+        res.status(400)
+        .send({message: "Username or password not properly formatted"})
         return
     }
 
@@ -83,20 +100,24 @@ app.post('/register', async (req, res) => {
        return
    }
 
-
-   // E' la get() che non funziona
     try {
-        
+
+        const allUserRefs = await firestore.collection('users')
+
+        const snapshot = await allUserRefs.where('email', '==', email).get();
+           if(!snapshot.empty){
+            return res.status(409).json({ message: "An account with that e-mail address already exists!" })
+           }
         const userRef = await firestore.collection('users').doc(username).get();
         if (userRef.exists) {
             return res.status(409).json({ message: "Username already exists" })
         }
-        
 
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
         await firestore.collection('users').doc(username).set({
+            email: email,
             username: username,
             password: passwordHash,
             roles: [2001],
@@ -159,12 +180,23 @@ app.post('/forgotpassword', async (req, res) => {
     }
 
     try{
-        const userRef = await firestore.collection('users').doc(username).get();
-    if (!userRef.exists) {
-        //per evitare l'enumerazione di tutti gli account, inviamo un messaggio generico
-         res.status(200)({ message: "If that email address is in our database, we will send you an email to reset your password"});
-         return
-    }
+        var usernameTrovato = "blank"
+        const allUserRefs = await firestore.collection('users')
+        const snapshot = await allUserRefs.where('email', '==', email).get();
+           if(!snapshot.empty){
+               // la mail è stata trovata
+               snapshot.forEach(doc => {
+                console.log(doc.id, '=>', doc.data());
+                 usernameTrovato = doc.id
+              });
+
+              //testato funziona
+            
+           }
+
+           //la mail non è stata trovata, in ogni caso inviamo lo stesso messaggio
+
+        return res.status(200).json({ message: "If that e-mail is in our database, we will send a link to reset your password" })
 
     }
     catch(err){
