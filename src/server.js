@@ -199,6 +199,18 @@ app.post('/forgotpassword', async (req, res) => {
               //testato funziona
 
               let resetToken = crypto.randomBytes(32).toString("hex");
+              try{
+                await firestore.collection('resetTokens').doc(resetToken).set({
+                    email: email,
+                    username: usernameTrovato,
+                    createdAt: new Date().getTime(),
+                });
+
+              }catch(err){
+                  console.log(err)
+              }
+              
+
               console.log("##### ResetToken: "+resetToken);
               let url="http://localhost:8081/resetpassword?token="+resetToken
 
