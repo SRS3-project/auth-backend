@@ -156,6 +156,31 @@ app.post('/register', async (req, res) => {
 })
 
 app.post('/resetpassword', async (req,res)=>{
+    var token = req.query.token;
+
+    if(!token){
+        return res.status(401).json({message:"Unauthorized"})
+    }
+
+    try{
+    tokenRef = await firestore.collection('resetTokens').doc(token).get();
+
+
+    if(!tokenRef.exists){
+        return res.status(404).json({message:"Not found"})
+    }
+    else{
+        usernameTrovato = tokenRef.data().username
+
+        return res.status(200).json({message:"mi è arrivato il token per il reset di "+usernameTrovato})
+    }
+}
+
+    catch(err){
+        console.log(err)
+        return res.status(500)
+    }
+    
 
 
 })
