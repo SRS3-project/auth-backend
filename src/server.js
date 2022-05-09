@@ -16,7 +16,7 @@ const app = express();
 const bcrypt = require('bcrypt');
 var validator = require("email-validator");
 const crypto = require("crypto");
-const nodemailer=require("nodemailer");
+const nodemailer = require("nodemailer");
 module.exports = app
 
 app.use(cookieParser())
@@ -60,56 +60,56 @@ app.post('/register', async (req, res) => {
     const { email, username, password } = req.body
     //TODO: check if they are valid
 
-    if(!req.body){
-        return res.status(400).json({message:"Username or password not properly formatted"})
+    if (!req.body) {
+        return res.status(400).json({ message: "Username or password not properly formatted" })
     }
 
-    if(!email){
-        return res.status(400).json({message:"Email must not be blank"})
+    if (!email) {
+        return res.status(400).json({ message: "Email must not be blank" })
     }
 
-    if(!validator.validate(email)){
-        return res.status(400).json({message:"Not a valid email"})
+    if (!validator.validate(email)) {
+        return res.status(400).json({ message: "Not a valid email" })
     }
 
     if (!username || !password) {
-        return res.status(400).json({message:"Username or password not properly formatted"})
+        return res.status(400).json({ message: "Username or password not properly formatted" })
     }
 
-    if(username.length==0){
-         res.status(400)
-        .json({message:"Username or password not properly formatted"})
+    if (username.length == 0) {
+        res.status(400)
+            .json({ message: "Username or password not properly formatted" })
         return
     }
 
     const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%]).{8,24}$/;
     const regex = new RegExp(PWD_REGEX)
 
-    if(!regex.test(password)){
+    if (!regex.test(password)) {
         res.status(400)
-        .send({message: "Username or password not properly formatted"})
+            .send({ message: "Username or password not properly formatted" })
         return
     }
 
-    if(password.length<8){
-         res.status(400)
-        .send({message: "Username or password not properly formatted"})
+    if (password.length < 8) {
+        res.status(400)
+            .send({ message: "Username or password not properly formatted" })
         return
     }
-    if(password.length > 24){
+    if (password.length > 24) {
         res.status(400)
-       .send({message: "Username or password not properly formatted"})
-       return
-   }
+            .send({ message: "Username or password not properly formatted" })
+        return
+    }
 
     try {
 
         const allUserRefs = await firestore.collection('users')
 
         const snapshot = await allUserRefs.where('email', '==', email).get();
-           if(!snapshot.empty){
+        if (!snapshot.empty) {
             return res.status(409).json({ message: "An account with that e-mail address already exists!" })
-           }
+        }
         const userRef = await firestore.collection('users').doc(username).get();
         if (userRef.exists) {
             return res.status(409).json({ message: "Username already exists" })
@@ -144,7 +144,7 @@ app.post('/register', async (req, res) => {
                 message: "User successfully created",
                 username: username,
                 roles: [2001],
-        });
+            });
     } catch (err) {
         console.log("--------ERRORE DI REGISTRAZIONE----------")
         console.log(err)
@@ -155,226 +155,330 @@ app.post('/register', async (req, res) => {
     }
 })
 
-app.post('/resetpassword', async (req,res)=>{
+app.put('/forgotpassword/:email', async (req, res) => {
+    if (!req.body) {
+        res.status(400).json({ message: "Parameters are not valid" })
+        return
+
+    }
+    if (!req.params) {
+        res.status(400).json({ message: "Parameters are not valid" })
+        return
+    }
+    if (!req.params.email) {
+        res.status(400).json({ message: "Parameters are not valid" })
+        return
+    }
+    const { newPassword, token } = req.body
+    const email = req.params.email
+
+    if (!validator.validate(email)) {
+        return res.status(400).json({ message: "Parameters are not valid" })
+    }
+
+    if (!token || !newPassword) {
+        res.status(400).json({ message: "Parameters are not valid" })
+        return
+    }
+
+    const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%]).{8,24}$/;
+    const regex = new RegExp(PWD_REGEX)
+
+    if (!regex.test(newPassword)) {
+        res.status(400)
+            .send({ message: "Password not properly formatted" })
+        return
+    }
+
+
+    var usernameTrovato = "blank"
+    const allUserRefs = await firestore.collection('users')
+    const snapshot = await allUserRefs.where('email', '==', email).get();
+    if (!snapshot.empty) {
+        // la mail è stata trovata
+        snapshot.forEach(doc => {
+            usernameTrovato = doc.id
+        });
+    }
+
+    console.log("Username:" + usernameTrovato)
+
+    var userRef = undefined
+    try {
+        userRef = await firestore.collection('users').doc(usernameTrovato).get();
+        tokenRef = await firestore.collection('resetTokens').doc(token).get();
+
+        if (!userRef.exists) {
+            return res.status(401).json({ message: "Unauthorized" })
+        }
+
+        if (!tokenRef.exists) {
+            return res.status(401).json({ message: "Unauthorized" })
+        }
+
+        else {
+            var now = new Date().getTime()
+
+            var oreScaduto = ((now - tokenRef.data().createdAt) / 36e5)
+            console.log("Il token è stato creato " + oreScaduto + " ore fa")
+
+            expired = false
+            if (oreScaduto > 1) {
+                expired = true
+            }
+
+            var alreadyUsed = tokenRef.data().alreadyUsed
+
+            if (alreadyUsed) {
+                res.status(400).json({ message: "The reset token has already been used" })
+            }
+
+            if (expired) {
+                res.status(400).json({ message: "The reset token has expired" })
+                return
+            }
+
+            if (!userRef.exists) {
+                res.status(400)
+                    .json({ message: "Parameters are not valid" })
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(newPassword, salt);
+            firestore.collection('users').doc(usernameTrovato).update({ password: passwordHash })
+            firestore.collection('resetTokens').doc(token).update({ alreadyUsed: true })
+
+            res.send(201).json({ message: "Password updated successfully" })
+            return
+
+        }
+
+
+    }
+    catch (err) {
+        console.log(err)
+        res.status(500)
+        return
+    }
+
+
+
+
+
+
+})
+
+
+
+app.post('/resetpassword/:token', async (req, res) => {
 
     //ATTENZIONE:invalidare il token quando è stato già usato
     var token = req.query.token;
 
-    if(!token){
-        return res.status(401).json({message:"Unauthorized"})
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" })
     }
 
-    if(token.length<64){
-        return res.status(401).json({message:"Unauthorized"})
+    if (token.length < 64) {
+        return res.status(401).json({ message: "Unauthorized" })
     }
 
-    try{
-    tokenRef = await firestore.collection('resetTokens').doc(token).get();
+    try {
+        tokenRef = await firestore.collection('resetTokens').doc(token).get();
 
 
-    if(!tokenRef.exists){
-        return res.status(401).json({message:"Unauthorized"})
+        if (!tokenRef.exists) {
+            return res.status(401).json({ message: "Unauthorized" })
+        }
+        else {
+            //invalida qui il token. Come?
+            usernameTrovato = tokenRef.data().username
+            alreadyUsed = tokenRef.data().alreadyUsed;
+            if (alreadyUsed == true || alreadyUsed == undefined) {
+
+                return res.status(401).json({ message: "Invalid token" })
+            }
+
+
+            return res.status(200).json({ message: "mi è arrivato il token per il reset di " + usernameTrovato })
+        }
     }
-    else{
-        //invalida qui il token. Come?
-        usernameTrovato = tokenRef.data().username
 
-
-        return res.status(200).json({message:"mi è arrivato il token per il reset di "+usernameTrovato})
-    }
-}
-
-    catch(err){
+    catch (err) {
         console.log(err)
         return res.status(500)
     }
-    
+
 
 
 })
 
 app.post('/forgotpassword', async (req, res) => {
 
-    if(!req.body){
-        res.status(400).json({message:"E-mail field must not be blank"})
+    if (!req.body) {
+        res.status(400).json({ message: "E-mail field must not be blank" })
         return
     }
 
     const { email } = req.body;
     console.log("EMAIL: " + email)
-    if(email==undefined){
-        res.status(400).json({message:"E-mail field must not be blank"})
+    if (email == undefined) {
+        res.status(400).json({ message: "E-mail field must not be blank" })
         return
 
     }
-    if(email==""){
-        res.status(400).json({ message:"E-mail field must not be blank" })
+    if (email == "") {
+        res.status(400).json({ message: "E-mail field must not be blank" })
         return
-   }
+    }
 
 
-    if(!validator.validate(email)){
-        res.status(400).json({message:"Not a valid e-mail address"})
+    if (!validator.validate(email)) {
+        res.status(400).json({ message: "Not a valid e-mail address" })
         return
 
     }
 
-    try{
+    try {
         var usernameTrovato = "blank"
         const allUserRefs = await firestore.collection('users')
         const snapshot = await allUserRefs.where('email', '==', email).get();
-           if(!snapshot.empty){
-               // la mail è stata trovata
-               snapshot.forEach(doc => {
-                 usernameTrovato = doc.id
-              });
+        if (!snapshot.empty) {
+            // la mail è stata trovata
+            snapshot.forEach(doc => {
+                usernameTrovato = doc.id
+            });
+            console.log("Username:" + usernameTrovato)
 
-              //testato funziona
+            //testato funziona
 
-              let resetToken = crypto.randomBytes(32).toString("hex");
-              try{
+            let resetToken = crypto.randomBytes(32).toString("hex");
+            try {
                 await firestore.collection('resetTokens').doc(resetToken).set({
                     email: email,
                     username: usernameTrovato,
                     createdAt: new Date().getTime(),
+                    alreadyUsed: false
                 });
 
-              }catch(err){
-                  console.log(err)
-              }
-              
+            } catch (err) {
+                console.log(err)
+            }
 
-              console.log("##### ResetToken: "+resetToken);
-              let url="http://localhost:8081/resetpassword?token="+resetToken
 
-              let transporter = nodemailer.createTransport({
+            console.log("##### ResetToken: " + resetToken);
+            let url = "http://localhost:8081/resetpassword/" + resetToken
+
+            let transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
-                  user: "progettosrs3@gmail.com",
-                  pass: "Progettosrs3_",
+                    user: "progettosrs3@gmail.com",
+                    pass: "Progettosrs3_",
                 },
-              });
-              urlHtml='"'+url+'"'
-              var html = "<h1>Password reset procedure</h1><p>Hello from SRS3! It looks like you requested to reset your password.</p><blockquote><p>Please follow this <a href="+urlHtml+">link</a> to complete the procedure.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>"+url+"</h4><p>You didn't ask to reset your password? E sti cazzi!</p>"
-              console.log(html)
-              let mailOptions = {
+            });
+            urlHtml = '"' + url + '"'
+            var html = "<h1>Password reset procedure</h1><p>Hello from SRS3! It looks like you requested to reset your password.</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to complete the procedure.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't ask to reset your password? Please ignore this e-mail, your password will remain unchanged.</p>"
+            console.log(html)
+            let mailOptions = {
                 from: 'progettosrs3@gmail.com',
                 to: email,
                 subject: 'Password reset',
                 html: html,
-              };
-              
-              transporter.sendMail(mailOptions, function (err, info) {
+            };
+
+            transporter.sendMail(mailOptions, function (err, info) {
                 if (err) {
                     console.log(err)
-                  res.json(err);
+                    res.json(err);
                 } else {
                     console.log(info)
-                  res.json(info);
+                    res.json(info);
                 }
-              });
-            
-              return res.status(200).json({ message: resetToken})
+            });
 
-              
-              
-            
-           }
+            return res.status(200).json({ message: "If that e-mail is in our database, we will send a link to reset your password" })
 
-           //la mail non è stata trovata, in ogni caso inviamo lo stesso messaggio
 
-           return res.status(200).json({ message: resetToken})
+
+
+        }
+
+        //la mail non è stata trovata, in ogni caso inviamo lo stesso messaggio
+
+        return res.status(200).json({ message: resetToken })
     }
-    catch(err){
+    catch (err) {
         console.log("------ERRORE FORGOT PASSWORD-----")
         console.log(email)
         console.log(err)
-        res.status(500).json({message:"Errore del server"})
+        res.status(500).json({ message: "Errore del server" })
         return
 
     }
-    
 
-
-    
 })
 
 app.post('/login', async (req, res) => {
 
-    if(!req.body){
+    if (!req.body) {
 
         return res.status(400)
-        .json({ 
-            message: "Login failed: invalid username or password"
-         })
+            .json({
+                message: "Login failed: invalid username or password"
+            })
     }
-/*
-    if (!username || !password) {
-        return res.status(400)
-        .json({ 
-            message: "Login failed: invalid username or password"
-         })
-    }
-
-    if(username==undefined || password == undefined){
-        return res.status(400)
-        .json({ 
-            message: "Login failed: invalid username or password"
-         })
-
-    }*/
-
     const { username, password } = req.body;
 
-    if(username == "" || password == ""){
+    if (username == "" || password == "") {
         return res.status(400)
-        .json({  
-            message: "Login failed: invalid username or password"
-         })
+            .json({
+                message: "Login failed: invalid username or password"
+            })
     }
     if (!username || !password) {
         return res.status(400)
-        .json({ 
-            message: "Login failed: invalid username or password"
-         })
-    }
-
-    try{
-        const userRef = await firestore.collection('users').doc(username).get();
-    if (!userRef.exists) {
-        return res.status(401)
-        .json({
-            message: "Login failed: invalid username or password"
-        });
-    }
-
-    const user = userRef.data();
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-         return res.status(401)
-         .json({
-             message: "Login failed: invalid username or password"
+            .json({
+                message: "Login failed: invalid username or password"
             })
     }
 
-    const maxAge = 3 * 60 * 60;
-    const token = jsonwebtoken.sign(
-        { username: user.username },
-        process.env.JWT_SECRET,
-        {
-            expiresIn: maxAge, // 3hrs in sec
+    try {
+        const userRef = await firestore.collection('users').doc(username).get();
+        if (!userRef.exists) {
+            return res.status(401)
+                .json({
+                    message: "Login failed: invalid username or password"
+                });
         }
-    );
-    res.status(200)
-        .cookie("X-AUTH-TOKEN", token, {
-            httpOnly: true,
-            maxAge: maxAge * 1000, // 3hrs in ms
-        }).send({
-            message: "User successfully logged in",
-            username: user.username,
-            accessToken: token,
-            roles: user.roles,
-        });
+
+        const user = userRef.data();
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            return res.status(401)
+                .json({
+                    message: "Login failed: invalid username or password"
+                })
+        }
+
+        const maxAge = 3 * 60 * 60;
+        const token = jsonwebtoken.sign(
+            { username: user.username },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: maxAge, // 3hrs in sec
+            }
+        );
+        res.status(200)
+            .cookie("X-AUTH-TOKEN", token, {
+                httpOnly: true,
+                maxAge: maxAge * 1000, // 3hrs in ms
+            }).send({
+                message: "User successfully logged in",
+                username: user.username,
+                accessToken: token,
+                roles: user.roles,
+            });
 
     }
 
@@ -389,7 +493,7 @@ app.post('/login', async (req, res) => {
         })
     }
 
-    
+
 });
 
 app.get('/refresh', async (req, res) => {
