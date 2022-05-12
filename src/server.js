@@ -123,8 +123,25 @@ app.post('/register', async (req, res) => {
             username: username,
             password: passwordHash,
             roles: [2001],
+            emailConfirmed: false,
             createdAt: new Date().getTime(),
         });
+
+        let confirmToken = crypto.randomBytes(32).toString("hex");
+
+        try{
+
+            await firestore.collection('confirmTokens').doc(confirmToken).set({
+                email: email,
+                username: username,
+                alreadyUsed: false
+            })
+
+        }
+        catch(err){
+            res.status(500).json({message: "Error in registering, please try again"})
+        }
+
 
         const maxAge = 3 * 60 * 60;
         const token = jsonwebtoken.sign(
@@ -135,13 +152,42 @@ app.post('/register', async (req, res) => {
             }
         );
 
+        let url = "http://localhost:8081/confirmemail/" + confirmToken
+
+            let transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: "progettosrs3@gmail.com",
+                    pass: "Progettosrs3_",
+                },
+            });
+            urlHtml = '"' + url + '"'
+            var html = "<h1>Confirm your e-mail</h1><p>Hello, "+username+"! Thank you for joining us</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to confirm your e-mail address.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't register? Please ignore this e-mail.</p>"
+            console.log(html)
+            let mailOptions = {
+                from: 'progettosrs3@gmail.com',
+                to: email,
+                subject: 'E-mail confirmation procedure',
+                html: html,
+            };
+
+            transporter.sendMail(mailOptions, function (err, info) {
+                if (err) {
+                    console.log(err)
+                    res.json(err);
+                } else {
+                    console.log(info)
+                    res.json(info);
+                }
+            });
+
         return res.status(201)
             .cookie("X-AUTH-TOKEN", token, {
                 httpOnly: true,
                 maxAge: maxAge * 1000, // 3hrs in ms
             })
             .send({
-                message: "User successfully created",
+                message: "User successfully created. Please check your e-mail inbox to confirm your e-mail",
                 username: username,
                 roles: [2001],
             });
@@ -263,6 +309,62 @@ app.put('/forgotpassword/:email', async (req, res) => {
 
 
 
+
+
+
+})
+
+app.get('/confirmemail/:token', async (req, res) => {
+
+    //ATTENZIONE:invalidare il token quando è stato già usato
+    var token = req.params.token;
+
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized. No token in request" })
+    }
+
+    if (token.length < 64) {
+        return res.status(401).json({ message: "Unauthorized" })
+    }
+
+    try {
+        tokenRef = await firestore.collection('confirmTokens').doc(token).get();
+
+
+        if (!tokenRef.exists) {
+            return res.status(401).json({ message: "Unauthorized. The token does not exist in our database" })
+        }
+        else {
+            //invalida qui il token. Come?
+            usernameTrovato = tokenRef.data().username
+            alreadyUsed = tokenRef.data().alreadyUsed;
+            if (alreadyUsed == true || alreadyUsed == undefined) {
+
+                return res.status(401).json({ message: "Your e-mail has already been confirmed" })
+            }
+
+            try{
+                firestore.collection('users').doc(usernameTrovato).update({emailConfirmed:true});
+                firestore.collection('confirmTokens').doc(token).update({alreadyUsed: true})
+
+            }
+            catch(err){
+                console.log(err)
+                res.status(500).json({message: "Error in confirming the e-mail address, please try again later"})
+                return
+            }
+            
+            
+
+            return res.status(200).json({ message: "Ho confermato la registrazione di " + usernameTrovato })
+        }
+    }
+
+    catch (err) {
+        console.log(err)
+        return res.status(500)
+    }
 
 
 
@@ -453,6 +555,10 @@ app.post('/login', async (req, res) => {
         }
 
         const user = userRef.data();
+
+        if(!user.emailConfirmed){
+            return res.status(401).json({message: "You account has not been confirmed yet, please check your e-mail inbox"})
+        }
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             return res.status(401)
@@ -495,6 +601,10 @@ app.post('/login', async (req, res) => {
 
 
 });
+
+
+
+
 
 app.get('/refresh', async (req, res) => {
     try {
