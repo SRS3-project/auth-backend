@@ -17,6 +17,7 @@ const bcrypt = require('bcrypt');
 var validator = require("email-validator");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const mg = require('nodemailer-mailgun-transport');
 module.exports = app
 
 app.use(cookieParser())
@@ -154,18 +155,20 @@ app.post('/register', async (req, res) => {
 
         let url = "http://localhost:8081/confirmemail/" + confirmToken
 
-            let transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: "progettosrs3@gmail.com",
-                    pass: "Progettosrs3_",
-                },
-            });
+        let transporter = nodemailer.createTransport({
+            service: "gmail",
+            port: 587,
+            secure: false, // true for 465, false for other ports
+            auth: {
+              user: "progettosrs3@gmail.com",
+              pass: "Progettosrs3_", // generated ethereal password
+            },
+          });
+          
             urlHtml = '"' + url + '"'
             var html = "<h1>Confirm your e-mail</h1><p>Hello, "+username+"! Thank you for joining us</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to confirm your e-mail address.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't register? Please ignore this e-mail.</p>"
-            console.log(html)
             let mailOptions = {
-                from: 'progettosrs3@gmail.com',
+                from: 'postmaster@sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org',
                 to: email,
                 subject: 'E-mail confirmation procedure',
                 html: html,
@@ -174,10 +177,8 @@ app.post('/register', async (req, res) => {
             transporter.sendMail(mailOptions, function (err, info) {
                 if (err) {
                     console.log(err)
-                    res.json(err);
                 } else {
                     console.log(info)
-                    res.json(info);
                 }
             });
 
@@ -473,17 +474,19 @@ app.post('/forgotpassword', async (req, res) => {
             let url = "http://localhost:8081/resetpassword/" + resetToken
 
             let transporter = nodemailer.createTransport({
-                service: 'gmail',
+                service: "gmail",
+                port: 587,
+                secure: false, // true for 465, false for other ports
                 auth: {
-                    user: "progettosrs3@gmail.com",
-                    pass: "Progettosrs3_",
+                  user: "progettosrs3@gmail.com",
+                  pass: "Progettosrs3_", // generated ethereal password
                 },
-            });
+              });
             urlHtml = '"' + url + '"'
             var html = "<h1>Password reset procedure</h1><p>Hello from SRS3! It looks like you requested to reset your password.</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to complete the procedure.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't ask to reset your password? Please ignore this e-mail, your password will remain unchanged.</p>"
             console.log(html)
             let mailOptions = {
-                from: 'progettosrs3@gmail.com',
+                from: 'postmaster@sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org',
                 to: email,
                 subject: 'Password reset',
                 html: html,
@@ -492,23 +495,16 @@ app.post('/forgotpassword', async (req, res) => {
             transporter.sendMail(mailOptions, function (err, info) {
                 if (err) {
                     console.log(err)
-                    res.json(err);
                 } else {
-                    console.log(info)
-                    res.json(info);
-                }
+                    console.log(info)                }
             });
 
             return res.status(200).json({ message: "If that e-mail is in our database, we will send a link to reset your password" })
 
 
-
-
         }
 
         //la mail non è stata trovata, in ogni caso inviamo lo stesso messaggio
-
-        return res.status(200).json({ message: resetToken })
     }
     catch (err) {
         console.log("------ERRORE FORGOT PASSWORD-----")
