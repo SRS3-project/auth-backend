@@ -18,6 +18,8 @@ var validator = require("email-validator");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const mg = require('nodemailer-mailgun-transport');
+
+const promBundle = require("express-prom-bundle");
 module.exports = app
 
 app.use(cookieParser())
@@ -39,6 +41,20 @@ app.options('*', cors(corsConfig));
 // adding morgan to log HTTP requests
 app.use(morgan('combined'));
 
+const metricsMiddleware = promBundle({
+    includeMethod: true, 
+    includePath: true, 
+    includeStatusCode: true, 
+    includeUp: true,
+    customLabels: {project_name: 'hello_world', project_type: 'test_metrics_labels'},
+    promClient: {
+        collectDefaultMetrics: {
+        }
+      }
+});
+// add the prometheus middleware to all routes
+app.use(metricsMiddleware)
+
 
 // add some logging of requests
 if (process.env.NODE_ENV === 'development') {
@@ -56,6 +72,9 @@ app.get('/', (req, res) => {
         timestamp: new Date().getTime(),
     })
 })
+
+
+
 
 app.post('/register', async (req, res) => {
     const { email, username, password } = req.body
