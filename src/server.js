@@ -17,10 +17,6 @@ const bcrypt = require('bcrypt');
 var validator = require("email-validator");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
-const mg = require('nodemailer-mailgun-transport');
-const { Curl } = require('node-libcurl');
-const curl = new Curl();
-const axios = require('axios').default;
 module.exports = app
 
 app.use(cookieParser())
