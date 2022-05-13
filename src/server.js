@@ -152,34 +152,21 @@ app.post('/register', async (req, res) => {
             }
         );
 
-        let url = "http://localhost:8081/confirmemail/" + confirmToken
+        var mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN});
+        let url = process.env.CONFIRM_EMAIL_URL + confirmToken
 
-        let transporter = nodemailer.createTransport({
-            service: "gmail",
-            port: 587,
-            secure: false, // true for 465, false for other ports
-            auth: {
-              user: "progettosrs3@gmail.com",
-              pass: "Progettosrs3_", // generated ethereal password
-            },
-          });
-          
             urlHtml = '"' + url + '"'
             var html = "<h1>Confirm your e-mail</h1><p>Hello, "+username+"! Thank you for joining us</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to confirm your e-mail address.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't register? Please ignore this e-mail.</p>"
-            let mailOptions = {
-                from: 'progettosrs3@gmail.com',
-                to: email,
-                subject: 'E-mail confirmation procedure',
-                html: html,
-            };
 
-            transporter.sendMail(mailOptions, function (err, info) {
-                if (err) {
-                    console.log(err)
-                } else {
-                    console.log(info)
-                }
-            });
+            var data = {
+                from: 'SRS Confirm Email <confirmyouremail@'+process.env.MAILGUN_DOMAIN+'>',
+                to: email,
+                subject: 'E-mail Confirmation',
+                html:html
+              };
+              mailgun.messages().send(data, function (error, body) {
+                console.log(body);
+              });
 
         return res.status(201)
             .cookie("X-AUTH-TOKEN", token, {
@@ -470,42 +457,16 @@ app.post('/forgotpassword', async (req, res) => {
 
 
             console.log("##### ResetToken: " + resetToken);
-            let url = "http://localhost:8081/resetpassword/" + resetToken
+            let url = process.env.RESET_PASSWORD_URL + resetToken
 
-            var api_key = 'ee35f31ffbadf3108de0228ad78b9268-100b5c8d-c0b54f17'
-            var domain = 'sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org'
 
-            var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});
+            var mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN});
            
             urlHtml = '"' + url + '"'
             var html = "<h1>Password reset procedure</h1><p>Hello from SRS3! It looks like you requested to reset your password.</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to complete the procedure.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't ask to reset your password? Please ignore this e-mail, your password will remain unchanged.</p>"
-/*
-            axios.post('https://api.mailgun.net/v3/sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org/messages/', {
-                params: {
-                  from:'postmaster@sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org',
-                  to: 'forgotpassword@sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org',
-                  to: email,
-                  text: 'ciaoo',
-                  subject: 'Password Reset'
-                },
-                auth:{
-                  username: 'api',
-                  password:'ee35f31ffbadf3108de0228ad78b9268-100b5c8d-c0b54f17'
-                },
-                headers: { 'Content-Type': 'multipart/form-data' }
-              })
-              .then(function (response) {
-                console.log(response);
-              })
-              .catch(function (error) {
-                console.log(error);
-              })
-              .then(function () {
-                // always executed
-              });  
-*/
+
               var data = {
-                from: 'SRS Password Reset <passwordreset@'+domain+'>',
+                from: 'SRS Password Reset <passwordreset@'+process.env.MAILGUN_DOMAIN+'>',
                 to: 'andrea.salvucci97@gmail.com',
                 subject: 'Reset Password',
                 html:html
@@ -634,4 +595,5 @@ app.get('/refresh', async (req, res) => {
 })
 app.listen(parseInt(process.env.PORT) || 8080, async () => {
     console.log(`HTTP Server listening on port ${process.env.PORT}...`);
+    console.log(process.env.MAILGUN_API_KEY)
 });
