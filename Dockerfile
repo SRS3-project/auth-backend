@@ -5,6 +5,6 @@ COPY . .
 
 #RUN apk add --update python3-dev build-base # for gyp
 RUN npm install
-
+    
 ENTRYPOINT [ "npm", "start" ]
 

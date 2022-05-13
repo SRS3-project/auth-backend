@@ -18,6 +18,9 @@ var validator = require("email-validator");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const mg = require('nodemailer-mailgun-transport');
+const { Curl } = require('node-libcurl');
+const curl = new Curl();
+const axios = require('axios').default;
 module.exports = app
 
 app.use(cookieParser())
@@ -473,27 +476,47 @@ app.post('/forgotpassword', async (req, res) => {
             console.log("##### ResetToken: " + resetToken);
             let url = "http://localhost:8081/resetpassword/" + resetToken
 
-            let transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                  user: "progettosrs3@gmail.com",
-                  pass: "Progettosrs3_",
-                },
-              });
+            var api_key = 'ee35f31ffbadf3108de0228ad78b9268-100b5c8d-c0b54f17'
+            var domain = 'sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org'
+
+            var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});
+           
             urlHtml = '"' + url + '"'
             var html = "<h1>Password reset procedure</h1><p>Hello from SRS3! It looks like you requested to reset your password.</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to complete the procedure.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't ask to reset your password? Please ignore this e-mail, your password will remain unchanged.</p>"
-            let mailOptions = {
-                from: 'progettosrs3@gmail.com',
-                to: email,
-                subject: 'Password reset',
-                html: html,
-            };
-
-            transporter.sendMail(mailOptions, function (err, info) {
-                if (err) {
-                    console.log(err)
-                } else {           }
-            });
+/*
+            axios.post('https://api.mailgun.net/v3/sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org/messages/', {
+                params: {
+                  from:'postmaster@sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org',
+                  to: 'forgotpassword@sandboxaa65e0df7f4142659c6e59825c0a290e.mailgun.org',
+                  to: email,
+                  text: 'ciaoo',
+                  subject: 'Password Reset'
+                },
+                auth:{
+                  username: 'api',
+                  password:'ee35f31ffbadf3108de0228ad78b9268-100b5c8d-c0b54f17'
+                },
+                headers: { 'Content-Type': 'multipart/form-data' }
+              })
+              .then(function (response) {
+                console.log(response);
+              })
+              .catch(function (error) {
+                console.log(error);
+              })
+              .then(function () {
+                // always executed
+              });  
+*/
+              var data = {
+                from: 'SRS Password Reset <passwordreset@'+domain+'>',
+                to: 'andrea.salvucci97@gmail.com',
+                subject: 'Reset Password',
+                html:html
+              };
+              mailgun.messages().send(data, function (error, body) {
+                console.log(body);
+              });
 
             return res.status(200).json({ message: "If that e-mail is in our database, we will send a link to reset your password" })
 
