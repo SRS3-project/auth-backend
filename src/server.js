@@ -19,9 +19,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const mg = require('nodemailer-mailgun-transport');
 
-const client = require('prom-client')
 
-const register = new client.Registry()
 
 module.exports = app
 
@@ -57,28 +55,6 @@ if (process.env.NODE_ENV === 'development') {
         msg: "{{req.method}} {{req.url}} {{res.statusCode}} {{res.responseTime}}ms",
     }));
 }
- 
-client.collectDefaultMetrics({ register })
-
-const httpRequestDurationMicroseconds = new client.Histogram({
-  name: 'http_request_duration_seconds',
-  help: 'Duration of HTTP requests in seconds',
-  labelNames: ['method', 'route', 'code'],
-  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10] // 0.1 to 10 seconds
-})
-
-register.registerMetric(httpRequestDurationMicroseconds)
-app.get('/', (req, res) => {
-    return res.send({
-        timestamp: new Date().getTime(),
-    })
-})
-
-
-app.get('/metrics', async(req,res)=>{
-    res.setHeader('Content-Type', register.contentType)
-    res.end(register.metrics())
-})
 
 app.post('/register', async (req, res) => {
     const { email, username, password } = req.body
