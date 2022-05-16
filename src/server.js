@@ -297,6 +297,7 @@ app.put('/forgotpassword', async (req, res) => {
 
             if (alreadyUsed) {
                 res.status(400).json({ message: "The reset token has already been used" })
+                return
             }
 
             if (expired) {
@@ -307,6 +308,7 @@ app.put('/forgotpassword', async (req, res) => {
             if (!userRef.exists) {
                 res.status(400)
                     .json({ message: "Parameters are not valid" })
+                    return
             }
 
             const salt = await bcrypt.genSalt(10);

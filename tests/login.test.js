@@ -47,7 +47,7 @@ describe('POST /login', () =>{
 
     it('POST /login wrong password', async() => {
       const credenziali = {
-        username: "asalvucci2",
+        username: "asalvuccivero2",
         password: "passwordsbagliata"
       }
       const res = await request.post('/login')
@@ -63,8 +63,8 @@ describe('POST /login', () =>{
     it('POST /login right username and password', async() => {
       
       const credenziali = {
-        username: "asalvucci2",
-        password: "Dioporco123!"
+        username: "andreasalvuccivero2",
+        password: "Test1234!"
       }
       const res = await request.post('/login')
       
