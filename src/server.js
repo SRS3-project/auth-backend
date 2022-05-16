@@ -337,7 +337,7 @@ app.put('/forgotpassword', async (req, res) => {
 app.get('/confirmemail', async (req, res) => {
 
     //ATTENZIONE:invalidare il token quando è stato già usato
-    var token = req.query.token;
+    var token = req.body.token;
 
 
     if (!token) {
