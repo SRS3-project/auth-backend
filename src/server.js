@@ -19,7 +19,10 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const mg = require('nodemailer-mailgun-transport');
 
-const promBundle = require("express-prom-bundle");
+const client = require('prom-client')
+
+const register = new client.Registry()
+
 module.exports = app
 
 app.use(cookieParser())
@@ -41,19 +44,7 @@ app.options('*', cors(corsConfig));
 // adding morgan to log HTTP requests
 app.use(morgan('combined'));
 
-const metricsMiddleware = promBundle({
-    includeMethod: true, 
-    includePath: true, 
-    includeStatusCode: true, 
-    includeUp: true,
-    customLabels: {project_name: 'hello_world', project_type: 'test_metrics_labels'},
-    promClient: {
-        collectDefaultMetrics: {
-        }
-      }
-});
-// add the prometheus middleware to all routes
-app.use(metricsMiddleware)
+
 
 
 // add some logging of requests
@@ -66,7 +57,17 @@ if (process.env.NODE_ENV === 'development') {
         msg: "{{req.method}} {{req.url}} {{res.statusCode}} {{res.responseTime}}ms",
     }));
 }
+ 
+client.collectDefaultMetrics({ register })
 
+const httpRequestDurationMicroseconds = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'code'],
+  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10] // 0.1 to 10 seconds
+})
+
+register.registerMetric(httpRequestDurationMicroseconds)
 app.get('/', (req, res) => {
     return res.send({
         timestamp: new Date().getTime(),
@@ -74,7 +75,10 @@ app.get('/', (req, res) => {
 })
 
 
-
+app.get('/metrics', async(req,res)=>{
+    res.setHeader('Content-Type', register.contentType)
+    res.end(register.metrics())
+})
 
 app.post('/register', async (req, res) => {
     const { email, username, password } = req.body
