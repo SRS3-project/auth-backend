@@ -21,6 +21,8 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const mg = require('nodemailer-mailgun-transport');
 
+const newRelic = require('newrelic')
+
 
 
 
@@ -59,6 +61,12 @@ if (process.env.NODE_ENV === 'development') {
     }));
 }
 
+
+app.get('/', async (req,res) =>{
+    newRelic.recordMetric('Custom/getslash', 4)
+    return res.status(404).json({message: "not found"})
+
+})
 app.post('/register', async (req, res) => {
     const { email, username, password } = req.body
     //TODO: check if they are valid
