@@ -1,3 +1,5 @@
+require('newrelic');
+
 require('dotenv').config()
 const path = require('path');
 const express = require('express');
@@ -18,6 +20,7 @@ var validator = require("email-validator");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const mg = require('nodemailer-mailgun-transport');
+
 
 
 
@@ -203,6 +206,7 @@ app.post('/register', async (req, res) => {
 
 app.put('/forgotpassword', async (req, res) => {
     if (!req.body) {
+        
         res.status(400).json({ message: "Parameters are not valid" })
         return
 
