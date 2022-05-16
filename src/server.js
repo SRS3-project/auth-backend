@@ -1,5 +1,4 @@
-require('newrelic');
-
+var newRelic = require('newrelic')
 require('dotenv').config()
 const path = require('path');
 const express = require('express');
@@ -21,7 +20,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const mg = require('nodemailer-mailgun-transport');
 
-const newRelic = require('newrelic')
+
 
 
 
@@ -63,7 +62,13 @@ if (process.env.NODE_ENV === 'development') {
 
 
 app.get('/', async (req,res) =>{
-    newRelic.recordMetric('Custom/getslash', 4)
+    try{
+        newRelic.recordMetric('Custom/GetSlash', 4)
+    }
+    catch(err){
+        console.log(err)
+    }
+    
     return res.status(404).json({message: "not found"})
 
 })
