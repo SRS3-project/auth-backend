@@ -176,7 +176,7 @@ app.post('/register', async (req, res) => {
             }
         );
 
-        let url = "http://localhost:8081/confirmemail/" + confirmToken
+        let url = "http://localhost:8081/confirmemail?token=" + confirmToken
 
         let transporter = nodemailer.createTransport({
             service: "gmail",
@@ -225,22 +225,18 @@ app.post('/register', async (req, res) => {
     }
 })
 
-app.put('/forgotpassword/:email', async (req, res) => {
+app.put('/forgotpassword', async (req, res) => {
     if (!req.body) {
         res.status(400).json({ message: "Parameters are not valid" })
         return
 
     }
-    if (!req.params) {
-        res.status(400).json({ message: "Parameters are not valid" })
-        return
-    }
-    if (!req.params.email) {
+    if (!req.body.email) {
         res.status(400).json({ message: "Parameters are not valid" })
         return
     }
     const { newPassword, token } = req.body
-    const email = req.params.email
+    const email = req.body.email
 
     if (!validator.validate(email)) {
         return res.status(400).json({ message: "Parameters are not valid" })
@@ -338,10 +334,10 @@ app.put('/forgotpassword/:email', async (req, res) => {
 
 })
 
-app.get('/confirmemail/:token', async (req, res) => {
+app.get('/confirmemail', async (req, res) => {
 
     //ATTENZIONE:invalidare il token quando è stato già usato
-    var token = req.params.token;
+    var token = req.query.token;
 
 
     if (!token) {
@@ -396,7 +392,7 @@ app.get('/confirmemail/:token', async (req, res) => {
 
 
 
-app.post('/resetpassword/:token', async (req, res) => {
+app.post('/resetpassword', async (req, res) => {
 
     //ATTENZIONE:invalidare il token quando è stato già usato
     var token = req.query.token;
@@ -494,7 +490,7 @@ app.post('/forgotpassword', async (req, res) => {
 
 
             console.log("##### ResetToken: " + resetToken);
-            let url = "http://localhost:8081/resetpassword/" + resetToken
+            let url = "http://localhost:8081/resetpassword?token=" + resetToken
 
             let transporter = nodemailer.createTransport({
                 service: 'gmail',
