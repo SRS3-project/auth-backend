@@ -250,7 +250,7 @@ app.put('/forgotpassword', async (req, res) => {
     }
 
 
-    var usernameTrovato = "blank"
+    var usernameTrovato = undefined
     const allUserRefs = await firestore.collection('users')
     const snapshot = await allUserRefs.where('email', '==', email).get();
     if (!snapshot.empty) {
@@ -259,8 +259,6 @@ app.put('/forgotpassword', async (req, res) => {
             usernameTrovato = doc.id
         });
     }
-
-    console.log("Username:" + usernameTrovato)
 
     var userRef = undefined
     try {
@@ -279,7 +277,6 @@ app.put('/forgotpassword', async (req, res) => {
             var now = new Date().getTime()
 
             var oreScaduto = ((now - tokenRef.data().createdAt) / 36e5)
-            console.log("Il token è stato creato " + oreScaduto + " ore fa")
 
             expired = false
             if (oreScaduto > 1) {
@@ -309,7 +306,7 @@ app.put('/forgotpassword', async (req, res) => {
             firestore.collection('users').doc(usernameTrovato).update({ password: passwordHash })
             firestore.collection('resetTokens').doc(token).update({ alreadyUsed: true })
 
-            res.send(201).json({ message: "Password updated successfully" })
+            res.status(201).json({ message: "Password updated successfully" })
             return
 
         }
@@ -439,7 +436,6 @@ app.post('/forgotpassword', async (req, res) => {
     }
 
     const { email } = req.body;
-    console.log("EMAIL: " + email)
     if (email == undefined) {
         res.status(400).json({ message: "E-mail field must not be blank" })
         return
@@ -458,7 +454,7 @@ app.post('/forgotpassword', async (req, res) => {
     }
 
     try {
-        var usernameTrovato = "blank"
+        var usernameTrovato = undefined
         const allUserRefs = await firestore.collection('users')
         const snapshot = await allUserRefs.where('email', '==', email).get();
         if (!snapshot.empty) {
@@ -466,9 +462,6 @@ app.post('/forgotpassword', async (req, res) => {
             snapshot.forEach(doc => {
                 usernameTrovato = doc.id
             });
-            console.log("Username:" + usernameTrovato)
-
-            //testato funziona
 
             let resetToken = crypto.randomBytes(32).toString("hex");
             try {
@@ -482,9 +475,6 @@ app.post('/forgotpassword', async (req, res) => {
             } catch (err) {
                 console.log(err)
             }
-
-
-            console.log("##### ResetToken: " + resetToken);
             let url = "http://localhost:8081/resetpassword?token=" + resetToken
 
             let transporter = nodemailer.createTransport({
@@ -517,8 +507,6 @@ app.post('/forgotpassword', async (req, res) => {
         //la mail non è stata trovata, in ogni caso inviamo lo stesso messaggio
     }
     catch (err) {
-        console.log("------ERRORE FORGOT PASSWORD-----")
-        console.log(email)
         console.log(err)
         res.status(500).json({ message: "Errore del server" })
         return
@@ -596,8 +584,6 @@ app.post('/login', async (req, res) => {
 
     catch (err) {
         console.log("-----------ERRORE DI LOGIN-------")
-        console.log(username)
-        console.log(password)
         console.log(err)
         return res.status(500).send({
             message: "User not successfully logged in",
@@ -617,7 +603,7 @@ app.get('/refresh', async (req, res) => {
         const accessToken = req.cookies['X-AUTH-TOKEN'];
         const decoded = jsonwebtoken.verify(accessToken, process.env.JWT_SECRET);
         const userRef = await firestore.collection('users').doc(decoded.username).get();
-        return res.send({
+        return res.json({
             accessToken: accessToken,
             username: decoded.username,
             roles: userRef.data().roles,
