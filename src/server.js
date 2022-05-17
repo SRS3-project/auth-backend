@@ -45,6 +45,7 @@ app.options('*', cors(corsConfig));
 
 // adding morgan to log HTTP requests
 app.use(morgan('combined'));
+app.use(helmet.frameguard())
 
 
 
@@ -329,7 +330,7 @@ app.put('/forgotpassword', async (req, res) => {
 app.get('/confirmemail', async (req, res) => {
 
     //ATTENZIONE:invalidare il token quando è stato già usato
-    var token = req.body.token;
+    var token = req.params.token;
 
 
     if (!token) {
