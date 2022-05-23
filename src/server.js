@@ -30,6 +30,7 @@ module.exports = app
 app.use(cookieParser())
 
 app.use(helmet());
+app.set('view engine', 'ejs');
 
 // using bodyParser to parse JSON bodies into JS objects
 app.use(bodyParser.json());
@@ -70,7 +71,7 @@ app.get('/', async (req,res) =>{
         console.log(err)
     }
     
-    return res.status(404).json({message: "not found"})
+    return res.status(404).render("pages/404")
 
 })
 app.post('/register', async (req, res) => {
@@ -199,10 +200,12 @@ app.post('/register', async (req, res) => {
             });
 
         return res.status(201)
+        /*
             .cookie("X-AUTH-TOKEN", token, {
                 httpOnly: true,
                 maxAge: maxAge * 1000, // 3hrs in ms
             })
+            */
             .send({
                 message: "User successfully created. Please check your e-mail inbox to confirm your e-mail",
                 username: username,
@@ -571,10 +574,11 @@ app.post('/login', async (req, res) => {
             }
         );
         res.status(200)
-            .cookie("X-AUTH-TOKEN", token, {
+           /* .cookie("X-AUTH-TOKEN", token, {
                 httpOnly: true,
                 maxAge: maxAge * 1000, // 3hrs in ms
-            }).send({
+            })*/
+            .send({
                 message: "User successfully logged in",
                 username: user.username,
                 accessToken: token,

@@ -13,14 +13,7 @@ describe('GET /', () =>{
   it('Gets the / endpoint', async () => {
     // Sends GET Request to /test endpoint
     const res = await request.get('/')
-    expect(res.status).toBe(200)
-  })
-
-  it('Gets the / endpoint and receives a timestamp', async () => {
-    // Sends GET Request to /test endpoint
-    const res = await request.get('/')
-    expect(res.status).toBe(200)
-    expect(res.body.timestamp).toBeDefined();
+    expect(res.status).toBe(404)
   })
 
 })
