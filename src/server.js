@@ -214,7 +214,6 @@ app.post('/register', async (req, res) => {
                 roles: [2001],
             });
     } catch (err) {
-        console.log("--------ERRORE DI REGISTRAZIONE----------")
         console.log(err)
         return res.status(401).send({
             message: "User not successfully created",
@@ -602,7 +601,6 @@ app.post('/login', async (req, res) => {
     }
 
     catch (err) {
-        console.log("-----------ERRORE DI LOGIN-------")
         console.log(err)
         return res.status(500).send({
             message: "User not successfully logged in",
