@@ -79,6 +79,8 @@ app.post('/register', async (req, res) => {
     //TODO: check if they are valid
 
     if (!req.body) {
+        recordMetricImproperAccess();
+
         return res.status(400).json({ message: "Username or password not properly formatted" })
     }
 
@@ -223,6 +225,12 @@ app.post('/register', async (req, res) => {
 
 app.put('/forgotpassword', async (req, res) => {
     if (!req.body) {
+        try{
+            newRelic.recordMetric('Custom/GetSlash', 4)
+        }
+        catch(err){
+            console.log(err)
+        }
         
         res.status(400).json({ message: "Parameters are not valid" })
         return
@@ -254,7 +262,7 @@ app.put('/forgotpassword', async (req, res) => {
     }
 
 
-    var usernameTrovato = undefined
+    var usernameTrovato = "undefined"
     const allUserRefs = await firestore.collection('users')
     const snapshot = await allUserRefs.where('email', '==', email).get();
     if (!snapshot.empty) {
@@ -264,11 +272,14 @@ app.put('/forgotpassword', async (req, res) => {
         });
     }
 
+
     var userRef = undefined
     try {
         userRef = await firestore.collection('users').doc(usernameTrovato).get();
         tokenRef = await firestore.collection('resetTokens').doc(token).get();
-
+        if(userRef == undefined){
+            return res.status(401).json({message:"Unauthorized"})
+        }
         if (!userRef.exists) {
             return res.status(401).json({ message: "Unauthorized" })
         }
@@ -319,7 +330,7 @@ app.put('/forgotpassword', async (req, res) => {
     }
     catch (err) {
         console.log(err)
-        res.status(500)
+        res.status(500).json({message:"Server Error. Please try again in a few moments."})
         return
     }
 
@@ -435,6 +446,7 @@ app.post('/resetpassword', async (req, res) => {
 app.post('/forgotpassword', async (req, res) => {
 
     if (!req.body) {
+        recordMetricImproperAccess();
         res.status(400).json({ message: "E-mail field must not be blank" })
         return
     }
@@ -511,6 +523,7 @@ app.post('/forgotpassword', async (req, res) => {
         //la mail non è stata trovata, in ogni caso inviamo lo stesso messaggio
     }
     catch (err) {
+        recordMetricServerError();
         console.log(err)
         res.status(500).json({ message: "Errore del server" })
         return
@@ -522,6 +535,7 @@ app.post('/forgotpassword', async (req, res) => {
 app.post('/login', async (req, res) => {
 
     if (!req.body) {
+        recordMetricImproperAccess();
 
         return res.status(400)
             .json({
@@ -599,7 +613,23 @@ app.post('/login', async (req, res) => {
 
 });
 
+function recordMetricImproperAccess(){
+    try{
+        newRelic.recordMetric('Richiestavuota', 1)
+    }
+    catch(err){
+        console.log(err)
+    }
+}
 
+function recordMetricServerError(){
+    try{
+        newRelic.recordMetric('ServerError/ForgotPassword', 1)
+    }
+    catch(err){
+        console.log(err)
+    }
+}
 
 
 
