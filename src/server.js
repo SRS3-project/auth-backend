@@ -18,7 +18,7 @@ const bcrypt = require('bcrypt');
 var validator = require("email-validator");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
-const mg = require('nodemailer-mailgun-transport');
+
 
 
 
@@ -48,6 +48,38 @@ app.options('*', cors(corsConfig));
 app.use(morgan('combined'));
 app.use(helmet.frameguard())
 
+
+const sendEmail = async (mailObj) => {
+    const { from, recipients, subject, message } = mailObj;
+  
+    try {
+      // Create a transporter
+      let transporter = nodemailer.createTransport({
+        host: process.env.SENDINBLUE_HOSTNAME,
+        port: process.env.SENDINBLUE_PORT,
+        auth: {
+          user: process.env.SENDINBLUE_USER,
+          pass: process.env.SENDINBLUE_API_KEY,
+        },
+      });
+  
+      // send mail with defined transport object
+      let mailStatus = await transporter.sendMail({
+        from: from, // sender address
+        to: recipients, // list of recipients
+        subject: subject, // Subject line
+        text: message, // plain text
+      });
+  
+      console.log(`Message sent: ${mailStatus.messageId}`);
+      return `Message sent: ${mailStatus.messageId}`;
+    } catch (error) {
+      console.error(error);
+      throw new Error(
+        `Something went wrong in the sendmail method. Error: ${error.message}`
+      );
+    }
+  };
 
 
 
@@ -172,34 +204,32 @@ app.post('/register', async (req, res) => {
             }
         );
 
-        let url = "http://localhost:8081/confirmemail?token=" + confirmToken
 
-        let transporter = nodemailer.createTransport({
-            service: "gmail",
-            port: 587,
-            secure: false, // true for 465, false for other ports
-            auth: {
-              user: "progettosrs3@gmail.com",
-              pass: "Progettosrs3_", // generated ethereal password
-            },
-          });
+
+
+
+        let url = "http://localhost:8081/confirmemail?token=" + confirmToken
           
             urlHtml = '"' + url + '"'
             var html = "<h1>Confirm your e-mail</h1><p>Hello, "+username+"! Thank you for joining us</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to confirm your e-mail address.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't register? Please ignore this e-mail.</p>"
-            let mailOptions = {
-                from: 'progettosrs3@gmail.com',
-                to: email,
-                subject: 'E-mail confirmation procedure',
-                html: html,
-            };
+                       
+              
+              const mailObj = {
+                from: "noreply@progettosrs3.it",
+                recipients: [email],
+                subject: "E-mail confirmation procedure",
+                message: html,
+              };
 
-            transporter.sendMail(mailOptions, function (err, info) {
-                if (err) {
-                    console.log(err)
-                } else {
-                    console.log(info)
-                }
-            });
+            
+              
+              sendEmail(mailObj).then((res) => {
+                console.log(res);
+              });
+
+
+
+
 
         return res.status(201)
         /*
@@ -492,30 +522,22 @@ app.post('/forgotpassword', async (req, res) => {
             }
             let url = "http://localhost:8081/resetpassword?token=" + resetToken
 
-            let transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                  user: "progettosrs3@gmail.com",
-                  pass: "Progettosrs3_",
-                },
-              });
             urlHtml = '"' + url + '"'
             var html = "<h1>Password reset procedure</h1><p>Hello from SRS3! It looks like you requested to reset your password.</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to complete the procedure.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't ask to reset your password? Please ignore this e-mail, your password will remain unchanged.</p>"
-            let mailOptions = {
-                from: 'progettosrs3@gmail.com',
-                to: email,
-                subject: 'Password reset',
-                html: html,
-            };
+            const mailObj = {
+                from: "noreply@progettosrs3.it",
+                recipients: [email],
+                subject: "Password reset procedure",
+                message: html,
+              };
 
-            transporter.sendMail(mailOptions, function (err, info) {
-                if (err) {
-                    console.log(err)
-                } else {           }
-            });
+              sendEmail(mailObj).then((res) => {
+                console.log(res);
+              });
+
+
 
             return res.status(200).json({ message: "If that e-mail is in our database, we will send a link to reset your password" })
-
 
         }
 
