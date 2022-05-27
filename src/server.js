@@ -49,6 +49,21 @@ app.use(morgan('combined'));
 app.use(helmet.frameguard())
 
 
+
+
+
+/*
+// add some logging of requests
+if (process.env.NODE_ENV === 'development') {
+    app.use(expressWinston.logger({
+        transports: [new winston.transports.Console()],
+        meta: false,
+        expressFormat: true,
+        colorize: false,
+        msg: "{{req.method}} {{req.url}} {{res.statusCode}} {{res.responseTime}}ms",
+    }));
+}
+*/
 const sendEmail = async (mailObj) => {
     const { from, recipients, subject, message } = mailObj;
   
@@ -80,19 +95,6 @@ const sendEmail = async (mailObj) => {
       );
     }
   };
-
-
-
-// add some logging of requests
-if (process.env.NODE_ENV === 'development') {
-    app.use(expressWinston.logger({
-        transports: [new winston.transports.Console()],
-        meta: false,
-        expressFormat: true,
-        colorize: false,
-        msg: "{{req.method}} {{req.url}} {{res.statusCode}} {{res.responseTime}}ms",
-    }));
-}
 
 
 app.get('/', async (req,res) =>{
