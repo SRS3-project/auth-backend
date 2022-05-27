@@ -160,19 +160,19 @@ app.post('/register', async (req, res) => {
 
         const allUserRefs = await firestore.collection('users')
 
-        const snapshot = await allUserRefs.where('email', '==', email).get();
-        if (!snapshot.empty) {
+        const snapshotEmail = await allUserRefs.where('email', '==', email).get();
+        if (!snapshotEmail.empty) {
             return res.status(409).json({ message: "An account with that e-mail address already exists!" })
         }
-        const userRef = await firestore.collection('users').doc(username).get();
-        if (userRef.exists) {
-            return res.status(409).json({ message: "Username already exists" })
+        const snapshotUsername = await allUserRefs.where('username', '==', username).get();
+        if (!snapshotUsername.empty) {
+            return res.status(409).json({ message: "An account with that username already exists!" })
         }
 
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
-        await firestore.collection('users').doc(username).set({
+        await firestore.collection('users').doc().set({
             email: email,
             username: username,
             password: passwordHash,
@@ -186,10 +186,12 @@ app.post('/register', async (req, res) => {
         try{
 
             await firestore.collection('confirmTokens').doc(confirmToken).set({
+                confirmToken : confirmToken,
                 email: email,
                 username: username,
                 alreadyUsed: false
             })
+            console.log("Creato confirmToken " + confirmToken)
 
         }
         catch(err){
@@ -255,6 +257,13 @@ app.post('/register', async (req, res) => {
 })
 
 app.put('/forgotpassword', async (req, res) => {
+
+    /**
+     * Qua si aggiorna la password, la richiesta contiene nel body l'indirizzo email,
+     * la nuova password e il token, si cerca nel database l'indirizzo email per ottenere lo userRef,
+     * si cerca il token nel database dei token per vedere se è ancora valido, si confronta l'email del tokenRef
+     * con l'email che ci è arrivata, se corrispondono e tutto va bene si aggiorna la password su userRef
+     */
     if (!req.body) {
         try{
             newRelic.recordMetric('Custom/GetSlash', 4)
@@ -292,21 +301,23 @@ app.put('/forgotpassword', async (req, res) => {
         return
     }
 
-
-    var usernameTrovato = "undefined"
+    var idTrovato = undefined
     const allUserRefs = await firestore.collection('users')
     const snapshot = await allUserRefs.where('email', '==', email).get();
     if (!snapshot.empty) {
         // la mail è stata trovata
         snapshot.forEach(doc => {
-            usernameTrovato = doc.id
+            idTrovato = doc.id
         });
+    }
+    if(snapshot.empty){
+        return res.status(401).json({message:"Unauthorized"})
     }
 
 
     var userRef = undefined
     try {
-        userRef = await firestore.collection('users').doc(usernameTrovato).get();
+        userRef = await firestore.collection('users').doc(idTrovato).get();
         tokenRef = await firestore.collection('resetTokens').doc(token).get();
         if(userRef == undefined){
             return res.status(401).json({message:"Unauthorized"})
@@ -317,6 +328,10 @@ app.put('/forgotpassword', async (req, res) => {
 
         if (!tokenRef.exists) {
             return res.status(401).json({ message: "Unauthorized" })
+        }
+        if(!tokenRef.data().email == email){
+            // per qualche motivo il token non corrisponde alla sua mail
+            return res.status(401).json({message: "Unauthorized"})
         }
 
         else {
@@ -349,7 +364,7 @@ app.put('/forgotpassword', async (req, res) => {
 
             const salt = await bcrypt.genSalt(10);
             const passwordHash = await bcrypt.hash(newPassword, salt);
-            firestore.collection('users').doc(usernameTrovato).update({ password: passwordHash })
+            firestore.collection('users').doc(idTrovato).update({ password: passwordHash })
             firestore.collection('resetTokens').doc(token).update({ alreadyUsed: true })
 
             res.status(201).json({ message: "Password updated successfully" })
@@ -376,6 +391,7 @@ app.get('/confirmemail', async (req, res) => {
 
     //ATTENZIONE:invalidare il token quando è stato già usato
     var token = req.query.token;
+    console.log("Ricevuto il confirmToken " + token)
 
 
     if (!token) {
@@ -403,7 +419,19 @@ app.get('/confirmemail', async (req, res) => {
             }
 
             try{
-                firestore.collection('users').doc(usernameTrovato).update({emailConfirmed:true});
+                var idTrovato = undefined
+                const allUserRefs = await firestore.collection('users')
+                const snapshot = await allUserRefs.where('username', '==', usernameTrovato).get();
+
+                if(!snapshot.empty){
+                    snapshot.forEach(doc => {
+                        idTrovato = doc.id
+                    });
+                }
+                if(snapshot.empty){
+                    return res.status(401).json({message: "Unauthorized"})
+                }
+                firestore.collection('users').doc(idTrovato).update({emailConfirmed:true});
                 firestore.collection('confirmTokens').doc(token).update({alreadyUsed: true})
 
             }
@@ -501,14 +529,16 @@ app.post('/forgotpassword', async (req, res) => {
     }
 
     try {
-        var usernameTrovato = undefined
+        var idTrovato = undefined
         const allUserRefs = await firestore.collection('users')
         const snapshot = await allUserRefs.where('email', '==', email).get();
         if (!snapshot.empty) {
             // la mail è stata trovata
             snapshot.forEach(doc => {
-                usernameTrovato = doc.id
+                idTrovato = doc.id
             });
+            const userRef = await firestore.collection('users').doc(idTrovato).get();
+            const usernameTrovato = userRef.data().username
 
             let resetToken = crypto.randomBytes(32).toString("hex");
             try {
@@ -581,7 +611,22 @@ app.post('/login', async (req, res) => {
     }
 
     try {
-        const userRef = await firestore.collection('users').doc(username).get();
+
+        var idTrovato = undefined
+        const allUserRefs = await firestore.collection('users')
+        const snapshot = await allUserRefs.where('username', '==', username).get();
+        if (!snapshot.empty) {
+            // la mail è stata trovata
+            snapshot.forEach(doc => {
+                idTrovato = doc.id
+                console.log(doc.id)
+            });
+        }
+        if(snapshot.empty){
+            //lo username non viene trovato
+            return res.status(401).json({message: "Login failed: invalid username or password"})
+        }
+        const userRef = await firestore.collection('users').doc(idTrovato).get();
         if (!userRef.exists) {
             return res.status(401)
                 .json({
