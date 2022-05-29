@@ -43,6 +43,7 @@ app.options("*", cors(corsConfig));
 app.use(morgan("combined"));
 app.use(helmet.frameguard());
 
+/*
 // add some logging of requests
 if (process.env.NODE_ENV === "development") {
 	app.use(
@@ -54,7 +55,7 @@ if (process.env.NODE_ENV === "development") {
 			msg: "{{req.method}} {{req.url}} {{res.statusCode}} {{res.responseTime}}ms",
 		})
 	);
-}
+}*/
 
 app.get("/", async (req, res) => {
 	try {
