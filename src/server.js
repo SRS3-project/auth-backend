@@ -18,6 +18,7 @@ const bcrypt = require('bcrypt');
 var validator = require("email-validator");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const axios = require('axios')
 
 
 
@@ -108,6 +109,53 @@ app.get('/', async (req,res) =>{
     return res.status(404).render("pages/404")
 
 })
+
+
+app.delete('/deleteuser', async (req,res) =>{
+    
+    return res.status(404).render("pages/404")
+
+})
+
+app.post("/checkRecaptcha", async (req, res) => {
+	if (
+		req.body.captcha === undefined ||
+		req.body.captcha === "" ||
+		req.body.captcha === null
+	) {
+		return res.json({ success: false, msg: "Please select captcha" });
+	}
+
+	//console.log(req.body.captcha);
+
+	const secretKey = process.env.RECAPTHCA_SECRET;
+
+	const searchParams = new URLSearchParams({
+		secret: secretKey,
+		response: req.body.captcha,
+		remoteip: req.socket.remoteAddress,
+	});
+
+	const verifyURL = `https://google.com/recaptcha/api/siteverify?${searchParams}`;
+	console.log(verifyURL);
+
+    const body = axios
+  .get(verifyURL)
+  .then(res => {
+    console.log(`statusCode: ${res.status}`);
+    console.log(res);
+  })
+  .catch(error => {
+    console.error(error);
+  });
+
+	//const body = await fetch(verifyURL).then((res) => res.json());
+	console.log(body);
+	if (body.success !== undefined && !body.success)
+		return res.json({ success: false, msg: "Failed captcha verification" });
+
+	return res.json({ success: true, msg: "Captcha passed" });
+});
 app.post('/register', async (req, res) => {
     const { email, username, password } = req.body
     //TODO: check if they are valid
