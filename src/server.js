@@ -129,7 +129,7 @@ app.post("/checkRecaptcha", async (req, res) => {
 
 	//console.log(req.body.captcha);
 
-	const secretKey = process.env.RECAPTHCA_SECRET;
+	const secretKey = process.env.RECAPTCHA_SECRET;
 
 	const searchParams = new URLSearchParams({
 		secret: secretKey,
