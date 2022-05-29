@@ -112,7 +112,7 @@ app.get('/', async (req,res) =>{
 
 
 app.delete('/deleteuser', async (req,res) =>{
-    console.log("AO")
+    console.log("AOO")
     
     return res.status(404).render("pages/404")
 
