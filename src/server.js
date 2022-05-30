@@ -112,7 +112,40 @@ app.get('/', async (req,res) =>{
 
 
 app.delete('/deleteuser', async (req,res) =>{
-    console.log("AOO")
+
+    if(!req.body){
+        return res.status(400).json({message: "Bad Request"})
+    }
+    var token = req.body.token;
+    var userToDelete = req.body.username;
+    jsonwebtoken.verify(token,process.env.JWT_SECRET, function(err,decoded){
+        if(decoded.username==userToDelete){
+            //la richiesta viene dall'utente
+
+        var idTrovato = undefined
+        const allUserRefs = await firestore.collection('users')
+        const snapshot = await allUserRefs.where('username', '==', username).get();
+        if (!snapshot.empty) {
+            // la mail è stata trovata
+            snapshot.forEach(doc => {
+                idTrovato = doc.id
+                console.log(doc.id)
+            });
+        }
+        if(snapshot.empty){
+            //lo username non viene trovato
+            return res.status(400).json({message: "The user does not exist"})
+        }
+
+        await firestore.collection('users').doc(idTrovato).set({
+            deleted: true
+        })
+
+        }
+        else{
+            return res.status(401).json({message: "Unauthorized"})
+        }
+    })
     
     return res.status(404).render("pages/404")
 
@@ -126,7 +159,7 @@ app.post("/checkRecaptcha", async (req, res) => {
 	) {
 		return res.json({ success: false, msg: "Please select captcha" });
 	}
-
+    
 	//console.log(req.body.captcha);
 
 	const secretKey = process.env.RECAPTCHA_SECRET;
@@ -228,6 +261,7 @@ app.post('/register', async (req, res) => {
             roles: [2001],
             emailConfirmed: false,
             createdAt: new Date().getTime(),
+            deleted: false
         });
 
         let confirmToken = crypto.randomBytes(32).toString("hex");
@@ -685,6 +719,10 @@ app.post('/login', async (req, res) => {
 
         const user = userRef.data();
 
+        if(user.deleted == true){
+            return res.status(401).json({message: "The user was deleted. Sorry, but there is no going back. "+ 
+            "If you think this is an error, please contact us by e-mail"})
+        }
         if(!user.emailConfirmed){
             return res.status(401).json({message: "You account has not been confirmed yet, please check your e-mail inbox"})
         }
