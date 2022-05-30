@@ -67,128 +67,88 @@ if (process.env.NODE_ENV === 'development') {
 */
 const sendEmail = async (mailObj) => {
     const { from, recipients, subject, message } = mailObj;
-  
+
     try {
-      // Create a transporter
-      let transporter = nodemailer.createTransport({
-        host: process.env.SENDINBLUE_HOSTNAME,
-        port: process.env.SENDINBLUE_PORT,
-        auth: {
-          user: process.env.SENDINBLUE_USER,
-          pass: process.env.SENDINBLUE_API_KEY,
-        },
-      });
-  
-      // send mail with defined transport object
-      let mailStatus = await transporter.sendMail({
-        from: from, // sender address
-        to: recipients, // list of recipients
-        subject: subject, // Subject line
-        text: message, // plain text
-      });
-  
-      console.log(`Message sent: ${mailStatus.messageId}`);
-      return `Message sent: ${mailStatus.messageId}`;
+        // Create a transporter
+        let transporter = nodemailer.createTransport({
+            host: process.env.SENDINBLUE_HOSTNAME,
+            port: process.env.SENDINBLUE_PORT,
+            auth: {
+                user: process.env.SENDINBLUE_USER,
+                pass: process.env.SENDINBLUE_API_KEY,
+            },
+        });
+
+        // send mail with defined transport object
+        let mailStatus = await transporter.sendMail({
+            from: from, // sender address
+            to: recipients, // list of recipients
+            subject: subject, // Subject line
+            text: message, // plain text
+        });
+
+        console.log(`Message sent: ${mailStatus.messageId}`);
+        return `Message sent: ${mailStatus.messageId}`;
     } catch (error) {
-      console.error(error);
-      throw new Error(
-        `Something went wrong in the sendmail method. Error: ${error.message}`
-      );
+        console.error(error);
+        throw new Error(
+            `Something went wrong in the sendmail method. Error: ${error.message}`
+        );
     }
-  };
+};
 
 
-app.get('/', async (req,res) =>{
-    try{
+app.get('/', async (req, res) => {
+    try {
         newRelic.recordMetric('Custom/GetSlash', 4)
     }
-    catch(err){
+    catch (err) {
         console.log(err)
     }
-    
+
     return res.status(404).render("pages/404")
 
 })
 
-
-app.delete('/deleteuser', async (req,res) =>{
-
-    if(!req.body){
-        return res.status(400).json({message: "Bad Request"})
-    }
-    var token = req.body.token;
-    var userToDelete = req.body.username;
-    jsonwebtoken.verify(token,process.env.JWT_SECRET, function(err,decoded){
-        if(decoded.username==userToDelete){
-            //la richiesta viene dall'utente
-
-        var idTrovato = undefined
-        const allUserRefs = await firestore.collection('users')
-        const snapshot = await allUserRefs.where('username', '==', username).get();
-        if (!snapshot.empty) {
-            // la mail è stata trovata
-            snapshot.forEach(doc => {
-                idTrovato = doc.id
-                console.log(doc.id)
-            });
-        }
-        if(snapshot.empty){
-            //lo username non viene trovato
-            return res.status(400).json({message: "The user does not exist"})
-        }
-
-        await firestore.collection('users').doc(idTrovato).set({
-            deleted: true
-        })
-
-        }
-        else{
-            return res.status(401).json({message: "Unauthorized"})
-        }
-    })
-    
-    return res.status(404).render("pages/404")
-
-})
 
 app.post("/checkRecaptcha", async (req, res) => {
-	if (
-		req.body.captcha === undefined ||
-		req.body.captcha === "" ||
-		req.body.captcha === null
-	) {
-		return res.json({ success: false, msg: "Please select captcha" });
-	}
-    
-	//console.log(req.body.captcha);
+    if (
+        req.body.captcha === undefined ||
+        req.body.captcha === "" ||
+        req.body.captcha === null
+    ) {
+        return res.json({ success: false, msg: "Please select captcha" });
+    }
 
-	const secretKey = process.env.RECAPTCHA_SECRET;
+    //console.log(req.body.captcha);
 
-	const searchParams = new URLSearchParams({
-		secret: secretKey,
-		response: req.body.captcha,
-		remoteip: req.socket.remoteAddress,
-	});
+    const secretKey = process.env.RECAPTCHA_SECRET;
 
-	const verifyURL = `https://google.com/recaptcha/api/siteverify?${searchParams}`;
-	console.log(verifyURL);
+    const searchParams = new URLSearchParams({
+        secret: secretKey,
+        response: req.body.captcha,
+        remoteip: req.socket.remoteAddress,
+    });
+
+    const verifyURL = `https://google.com/recaptcha/api/siteverify?${searchParams}`;
+    console.log(verifyURL);
 
     const body = axios
-  .get(verifyURL)
-  .then(res => {
-    console.log(`statusCode: ${res.status}`);
-    console.log(res);
-  })
-  .catch(error => {
-    console.error(error);
-  });
+        .get(verifyURL)
+        .then(res => {
+            console.log(`statusCode: ${res.status}`);
+            console.log(res);
+        })
+        .catch(error => {
+            console.error(error);
+        });
 
-	//const body = await fetch(verifyURL).then((res) => res.json());
-	console.log(body);
-	if (body.success !== undefined && !body.success)
-		return res.json({ success: false, msg: "Failed captcha verification" });
+    //const body = await fetch(verifyURL).then((res) => res.json());
+    console.log(body);
+    if (body.success !== undefined && !body.success)
+        return res.json({ success: false, msg: "Failed captcha verification" });
 
-	return res.json({ success: true, msg: "Captcha passed" });
+    return res.json({ success: true, msg: "Captcha passed" });
 });
 app.post('/register', async (req, res) => {
     const { email, username, password } = req.body
@@ -266,10 +226,10 @@ app.post('/register', async (req, res) => {
 
         let confirmToken = crypto.randomBytes(32).toString("hex");
 
-        try{
+        try {
 
             await firestore.collection('confirmTokens').doc(confirmToken).set({
-                confirmToken : confirmToken,
+                confirmToken: confirmToken,
                 email: email,
                 username: username,
                 alreadyUsed: false
@@ -277,8 +237,8 @@ app.post('/register', async (req, res) => {
             console.log("Creato confirmToken " + confirmToken)
 
         }
-        catch(err){
-            res.status(500).json({message: "Error in registering, please try again"})
+        catch (err) {
+            res.status(500).json({ message: "Error in registering, please try again" })
         }
 
 
@@ -296,35 +256,35 @@ app.post('/register', async (req, res) => {
 
 
         let url = "http://localhost:8081/confirmemail?token=" + confirmToken
-          
-            urlHtml = '"' + url + '"'
-            var html = "<h1>Confirm your e-mail</h1><p>Hello, "+username+"! Thank you for joining us</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to confirm your e-mail address.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't register? Please ignore this e-mail.</p>"
-                       
-              
-              const mailObj = {
-                from: "noreply@progettosrs3.it",
-                recipients: [email],
-                subject: "E-mail confirmation procedure",
-                message: html,
-              };
 
-            
-              
-              sendEmail(mailObj).then((res) => {
-                console.log(res);
-              });
+        urlHtml = '"' + url + '"'
+        var html = "<h1>Confirm your e-mail</h1><p>Hello, " + username + "! Thank you for joining us</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to confirm your e-mail address.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't register? Please ignore this e-mail.</p>"
+
+
+        const mailObj = {
+            from: "noreply@progettosrs3.it",
+            recipients: [email],
+            subject: "E-mail confirmation procedure",
+            message: html,
+        };
+
+
+
+        sendEmail(mailObj).then((res) => {
+            console.log(res);
+        });
 
 
 
 
 
         return res.status(201)
-        /*
-            .cookie("X-AUTH-TOKEN", token, {
-                httpOnly: true,
-                maxAge: maxAge * 1000, // 3hrs in ms
-            })
-            */
+            /*
+                .cookie("X-AUTH-TOKEN", token, {
+                    httpOnly: true,
+                    maxAge: maxAge * 1000, // 3hrs in ms
+                })
+                */
             .send({
                 message: "User successfully created. Please check your e-mail inbox to confirm your e-mail",
                 username: username,
@@ -348,13 +308,13 @@ app.put('/forgotpassword', async (req, res) => {
      * con l'email che ci è arrivata, se corrispondono e tutto va bene si aggiorna la password su userRef
      */
     if (!req.body) {
-        try{
+        try {
             newRelic.recordMetric('Custom/GetSlash', 4)
         }
-        catch(err){
+        catch (err) {
             console.log(err)
         }
-        
+
         res.status(400).json({ message: "Parameters are not valid" })
         return
 
@@ -393,8 +353,8 @@ app.put('/forgotpassword', async (req, res) => {
             idTrovato = doc.id
         });
     }
-    if(snapshot.empty){
-        return res.status(401).json({message:"Unauthorized"})
+    if (snapshot.empty) {
+        return res.status(401).json({ message: "Unauthorized" })
     }
 
 
@@ -402,8 +362,8 @@ app.put('/forgotpassword', async (req, res) => {
     try {
         userRef = await firestore.collection('users').doc(idTrovato).get();
         tokenRef = await firestore.collection('resetTokens').doc(token).get();
-        if(userRef == undefined){
-            return res.status(401).json({message:"Unauthorized"})
+        if (userRef == undefined) {
+            return res.status(401).json({ message: "Unauthorized" })
         }
         if (!userRef.exists) {
             return res.status(401).json({ message: "Unauthorized" })
@@ -412,9 +372,9 @@ app.put('/forgotpassword', async (req, res) => {
         if (!tokenRef.exists) {
             return res.status(401).json({ message: "Unauthorized" })
         }
-        if(!tokenRef.data().email == email){
+        if (!tokenRef.data().email == email) {
             // per qualche motivo il token non corrisponde alla sua mail
-            return res.status(401).json({message: "Unauthorized"})
+            return res.status(401).json({ message: "Unauthorized" })
         }
 
         else {
@@ -442,7 +402,7 @@ app.put('/forgotpassword', async (req, res) => {
             if (!userRef.exists) {
                 res.status(400)
                     .json({ message: "Parameters are not valid" })
-                    return
+                return
             }
 
             const salt = await bcrypt.genSalt(10);
@@ -459,7 +419,7 @@ app.put('/forgotpassword', async (req, res) => {
     }
     catch (err) {
         console.log(err)
-        res.status(500).json({message:"Server Error. Please try again in a few moments."})
+        res.status(500).json({ message: "Server Error. Please try again in a few moments." })
         return
     }
 
@@ -501,30 +461,30 @@ app.get('/confirmemail', async (req, res) => {
                 return res.status(401).json({ message: "Your e-mail has already been confirmed" })
             }
 
-            try{
+            try {
                 var idTrovato = undefined
                 const allUserRefs = await firestore.collection('users')
                 const snapshot = await allUserRefs.where('username', '==', usernameTrovato).get();
 
-                if(!snapshot.empty){
+                if (!snapshot.empty) {
                     snapshot.forEach(doc => {
                         idTrovato = doc.id
                     });
                 }
-                if(snapshot.empty){
-                    return res.status(401).json({message: "Unauthorized"})
+                if (snapshot.empty) {
+                    return res.status(401).json({ message: "Unauthorized" })
                 }
-                firestore.collection('users').doc(idTrovato).update({emailConfirmed:true});
-                firestore.collection('confirmTokens').doc(token).update({alreadyUsed: true})
+                firestore.collection('users').doc(idTrovato).update({ emailConfirmed: true });
+                firestore.collection('confirmTokens').doc(token).update({ alreadyUsed: true })
 
             }
-            catch(err){
+            catch (err) {
                 console.log(err)
-                res.status(500).json({message: "Error in confirming the e-mail address, please try again later"})
+                res.status(500).json({ message: "Error in confirming the e-mail address, please try again later" })
                 return
             }
-            
-            
+
+
 
             return res.status(200).json({ message: "Ho confermato la registrazione di " + usernameTrovato })
         }
@@ -644,11 +604,11 @@ app.post('/forgotpassword', async (req, res) => {
                 recipients: [email],
                 subject: "Password reset procedure",
                 message: html,
-              };
+            };
 
-              sendEmail(mailObj).then((res) => {
+            sendEmail(mailObj).then((res) => {
                 console.log(res);
-              });
+            });
 
 
 
@@ -705,9 +665,9 @@ app.post('/login', async (req, res) => {
                 console.log(doc.id)
             });
         }
-        if(snapshot.empty){
+        if (snapshot.empty) {
             //lo username non viene trovato
-            return res.status(401).json({message: "Login failed: invalid username or password"})
+            return res.status(401).json({ message: "Login failed: invalid username or password" })
         }
         const userRef = await firestore.collection('users').doc(idTrovato).get();
         if (!userRef.exists) {
@@ -719,12 +679,14 @@ app.post('/login', async (req, res) => {
 
         const user = userRef.data();
 
-        if(user.deleted == true){
-            return res.status(401).json({message: "The user was deleted. Sorry, but there is no going back. "+ 
-            "If you think this is an error, please contact us by e-mail"})
+        if (user.deleted == true) {
+            return res.status(401).json({
+                message: "The user was deleted. Sorry, but there is no going back. " +
+                    "If you think this is an error, please contact us by e-mail"
+            })
         }
-        if(!user.emailConfirmed){
-            return res.status(401).json({message: "You account has not been confirmed yet, please check your e-mail inbox"})
+        if (!user.emailConfirmed) {
+            return res.status(401).json({ message: "You account has not been confirmed yet, please check your e-mail inbox" })
         }
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
@@ -743,10 +705,10 @@ app.post('/login', async (req, res) => {
             }
         );
         res.status(200)
-           /* .cookie("X-AUTH-TOKEN", token, {
-                httpOnly: true,
-                maxAge: maxAge * 1000, // 3hrs in ms
-            })*/
+            /* .cookie("X-AUTH-TOKEN", token, {
+                 httpOnly: true,
+                 maxAge: maxAge * 1000, // 3hrs in ms
+             })*/
             .send({
                 message: "User successfully logged in",
                 username: user.username,
@@ -767,20 +729,84 @@ app.post('/login', async (req, res) => {
 
 });
 
-function recordMetricImproperAccess(){
-    try{
+app.delete('/deleteuser', async (req, res) => {
+
+    if (!req.body) {
+        return res.status(400).json({ message: "Bad Request" })
+    }
+    var token = req.body.token;
+    var userToDelete = req.body.username;
+    var password = req.body.password;
+    if (!token || !userToDelete || !password) {
+        return res.status(400).json({ message: "There are some missing parameters" })
+    }
+    jsonwebtoken.verify(token, process.env.JWT_SECRET, function (err, decoded) {
+    if (decoded.username != userToDelete) {
+        //la richiesta viene dall'utente
+        return res.status(401).json({ message: "Unauthorized" })
+    }
+})
+        var idTrovato = undefined
+        const allUserRefs = await firestore.collection('users')
+        const snapshot = await allUserRefs.where('username', '==', userToDelete).get();
+        if (!snapshot.empty) {
+            // la mail è stata trovata
+            snapshot.forEach(doc => {
+                idTrovato = doc.id
+                console.log(doc.id)
+            });
+        }
+        if (snapshot.empty) {
+            //lo username non viene trovato
+            return res.status(400).json({ message: "The user does not exist" })
+        }
+        const userRef =  await firestore.collection('users').doc(idTrovato).get();
+        const user = userRef.data()
+        console.log("Confronto la password arrivata "+password+" con l'hash "+user.password)
+        const validPassword =  bcrypt.compare(password, user.password);
+        console.log("L'id dell'utente è "+idTrovato)
+        
+        if (!validPassword) {
+            return res.status(400).json({ message: "Password is not valid" })
+        }
+        else{
+            console.log("La password è valida")
+        }
+
+        try{
+            await firestore.collection('users').doc(idTrovato).update({
+                deleted: true
+            })
+
+        }
+        catch(err){
+            console.log(err)
+        }
+
+         
+
+
+    
+
+    return res.status(200)
+
+});
+
+
+function recordMetricImproperAccess() {
+    try {
         newRelic.recordMetric('Richiestavuota', 1)
     }
-    catch(err){
+    catch (err) {
         console.log(err)
     }
 }
 
-function recordMetricServerError(){
-    try{
+function recordMetricServerError() {
+    try {
         newRelic.recordMetric('ServerError/ForgotPassword', 1)
     }
-    catch(err){
+    catch (err) {
         console.log(err)
     }
 }
