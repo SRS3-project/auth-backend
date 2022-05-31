@@ -255,7 +255,7 @@ app.post('/register', async (req, res) => {
 
 
 
-        let url = "http://localhost:8081/confirmemail?token=" + confirmToken
+        let url = process.env.AUTH_BACKEND_URL+process.env.CONFIRM_EMAIL_URL+"?token=" + confirmToken
 
         urlHtml = '"' + url + '"'
         var html = "<h1>Confirm your e-mail</h1><p>Hello, " + username + "! Thank you for joining us</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to confirm your e-mail address.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't register? Please ignore this e-mail.</p>"
@@ -279,12 +279,6 @@ app.post('/register', async (req, res) => {
 
 
         return res.status(201)
-            /*
-                .cookie("X-AUTH-TOKEN", token, {
-                    httpOnly: true,
-                    maxAge: maxAge * 1000, // 3hrs in ms
-                })
-                */
             .send({
                 message: "User successfully created. Please check your e-mail inbox to confirm your e-mail",
                 username: username,
@@ -595,7 +589,7 @@ app.post('/forgotpassword', async (req, res) => {
             } catch (err) {
                 console.log(err)
             }
-            let url = "http://localhost:8081/resetpassword?token=" + resetToken
+            let url = process.env.FRONTEND_HOST+ process.env.RESET_PASSWORD_URL+"?token=" + resetToken
 
             urlHtml = '"' + url + '"'
             var html = "<h1>Password reset procedure</h1><p>Hello from SRS3! It looks like you requested to reset your password.</p><blockquote><p>Please follow this <a href=" + urlHtml + ">link</a> to complete the procedure.</p></blockquote><p>If the link does not work, copy and paste the following string in the URL bar of your browser.</p><h4>" + url + "</h4><p>You didn't ask to reset your password? Please ignore this e-mail, your password will remain unchanged.</p>"
@@ -705,10 +699,6 @@ app.post('/login', async (req, res) => {
             }
         );
         res.status(200)
-            /* .cookie("X-AUTH-TOKEN", token, {
-                 httpOnly: true,
-                 maxAge: maxAge * 1000, // 3hrs in ms
-             })*/
             .send({
                 message: "User successfully logged in",
                 username: user.username,
