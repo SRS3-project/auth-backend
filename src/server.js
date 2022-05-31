@@ -204,11 +204,11 @@ app.post('/register', async (req, res) => {
 
         const snapshotEmail = await allUserRefs.where('email', '==', email).get();
         if (!snapshotEmail.empty) {
-            return res.status(409).json({ message: "An account with that e-mail address already exists!" })
+            return res.status(409).json({ message: "An account with that e-mail address or username already exists!" })
         }
         const snapshotUsername = await allUserRefs.where('username', '==', username).get();
         if (!snapshotUsername.empty) {
-            return res.status(409).json({ message: "An account with that username already exists!" })
+            return res.status(409).json({ message: "An account with that e-mail address or username already exists!" })
         }
 
         const salt = await bcrypt.genSalt(10);

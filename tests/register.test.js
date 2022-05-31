@@ -105,7 +105,7 @@ it('POST /register void password sends back 400 Bad Request', async() => {
     .send(credenziali)
     .expect('Content-Type', /json/)
     .expect(409)
-    expect(res.body.message).toBe('An account with that username already exists!')
+    expect(res.body.message).toBe('An account with that e-mail address or username already exists!')
   })
 
   it('POST /register email already exists', async() => {
@@ -119,7 +119,7 @@ it('POST /register void password sends back 400 Bad Request', async() => {
     .send(credenziali)
     .expect('Content-Type', /json/)
     .expect(409)
-    expect(res.body.message).toBe('An account with that e-mail address already exists!')
+    expect(res.body.message).toBe('An account with that e-mail address or username already exists!')
     
 })
 
