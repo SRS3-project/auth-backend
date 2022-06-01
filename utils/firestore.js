@@ -1,7 +1,3 @@
-if (!process.env.DB_PREFIX) {
-    require('dotenv').config();
-}
-
 try{
     const {Firestore} = require('@google-cloud/firestore');
     console.log(`Connecting to firestore...`);

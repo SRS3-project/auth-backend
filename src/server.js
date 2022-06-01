@@ -1,5 +1,7 @@
+if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development') {
+    require('dotenv').config();
+}
 var newRelic = require('newrelic')
-require('dotenv').config()
 const path = require('path');
 const express = require('express');
 const winston = require('winston');
@@ -818,6 +820,8 @@ app.get('/refresh', async (req, res) => {
     }
     return res.sendStatus(401);
 })
-app.listen(parseInt(process.env.PORT) || 8080, async () => {
-    console.log(`HTTP Server listening on port ${process.env.PORT}...`);
+
+const port = parseInt(process.env.PORT) || 8080;
+app.listen(port, async () => {
+    console.log(`HTTP Server listening on port ${port}...`);
 });
