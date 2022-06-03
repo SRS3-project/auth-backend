@@ -678,7 +678,7 @@ app.post("/login", async (req, res) => {
 		}
 
 		playerRef = await firestore.collection('player').doc(username).get();{
-			if(playerRef.data().deleted){
+			if(playerRef.data().deleted || playerRef.data().deleted == undefined){
 				return res.status(400).json({message:"The user was deleted"})
 			}
 		}
