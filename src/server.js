@@ -677,6 +677,12 @@ app.post("/login", async (req, res) => {
 			});
 		}
 
+		playerRef = await firestore.collection('player').doc(username).get();{
+			if(playerRef.data().deleted){
+				return res.status(400).json({message:"The user was deleted"})
+			}
+		}
+
 		const user = userRef.data();
 
 		if (user.deleted == true) {
@@ -722,13 +728,14 @@ app.post("/login", async (req, res) => {
 	}
 });
 
-app.delete("/deleteuser", async (req, res) => {
+app.post("/deleteuser", async (req, res) => {
 	if (!req.body) {
 		return res.status(400).json({ message: "Bad Request" });
 	}
 	var token = req.body.token;
-	var userToDelete = req.body.username;
+	var userToDelete = req.body.userToDelete;
 	var password = req.body.password;
+	console.log(req.token+":"+req.userToDelete+":"+req.password)
 	if (!token || !userToDelete || !password) {
 		return res
 			.status(400)
@@ -758,12 +765,6 @@ app.delete("/deleteuser", async (req, res) => {
 	}
 	const userRef = await firestore.collection("users").doc(idTrovato).get();
 	const user = userRef.data();
-	console.log(
-		"Confronto la password arrivata " +
-			password +
-			" con l'hash " +
-			user.password
-	);
 	const validPassword = bcrypt.compare(password, user.password);
 	console.log("L'id dell'utente è " + idTrovato);
 
@@ -774,14 +775,15 @@ app.delete("/deleteuser", async (req, res) => {
 	}
 
 	try {
-		await firestore.collection("users").doc(idTrovato).update({
+		await firestore.collection("player").doc(userToDelete).update({
 			deleted: true,
 		});
 	} catch (err) {
 		console.log(err);
+		return res.status(500).json({message: "The server couldn't delete the player"})
 	}
 
-	return res.status(200);
+	return res.status(200).json({message:"The delete process was successful"});
 });
 
 function recordMetricImproperAccess() {
