@@ -39,7 +39,7 @@ app.use(bodyParser.json());
 
 // enabling CORS for all requests
 const corsConfig = {
-	origin: true,
+	origin: process.env.FRONTEND_HOST,
 	credentials: true,
 };
 
@@ -827,4 +827,5 @@ app.get("/refresh", async (req, res) => {
 const port = parseInt(process.env.PORT) || 8081;
 app.listen(port, async () => {
 	console.log(`HTTP Server listening on port ${port}...`);
+	console.log(process.env.FRONTEND_HOST)
 });
