@@ -39,7 +39,7 @@ app.use(bodyParser.json());
 
 // enabling CORS for all requests
 const corsConfig = {
-	origin: process.env.FRONTEND_HOST,
+	origin: true,
 	credentials: true,
 };
 
