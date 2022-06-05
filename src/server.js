@@ -458,9 +458,7 @@ app.get("/confirmemail", async (req, res) => {
 			usernameTrovato = tokenRef.data().username;
 			alreadyUsed = tokenRef.data().alreadyUsed;
 			if (alreadyUsed == true || alreadyUsed == undefined) {
-				return res.status(401).json({
-					message: "Your e-mail has already been confirmed",
-				});
+				return res.status(401).render("pages/emailalreadyconfirmed");
 			}
 
 			try {
@@ -495,9 +493,7 @@ app.get("/confirmemail", async (req, res) => {
 				return;
 			}
 
-			return res.status(200).json({
-				message: "Ho confermato la registrazione di " + usernameTrovato,
-			});
+			return res.status(200).render("pages/emailconfirmed");
 		}
 	} catch (err) {
 		console.log(err);
