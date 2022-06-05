@@ -678,11 +678,13 @@ app.post("/login", async (req, res) => {
 			});
 		}
 
-		playerRef = await firestore.collection('player').doc(username).get();{
-			if(playerRef && (playerRef.data().deleted || playerRef.data().deleted == undefined)){
+		playerRef = await firestore.collection('player').doc(username).get();
+			if(playerRef.exists){
+				playerData = playerRef.data();
+				if (playerData.deleted == true || playerData.deleted==undefined)
 				return res.status(400).json({message:"The user was deleted"})
 			}
-		}
+		
 
 		const user = userRef.data();
 
