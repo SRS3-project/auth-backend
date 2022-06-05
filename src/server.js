@@ -263,12 +263,13 @@ app.post("/register", async (req, res) => {
 		);
 
 		let url =
-			process.env.AUTH_BACKEND_URL +
+			process.env.AUTH_BACKEND_HOST +
 			process.env.CONFIRM_EMAIL_URL +
 			"?token=" +
 			confirmToken;
 
 		urlHtml = '"' + url + '"';
+		console.log(url)
 		var html =
 			"<h1>Confirm your e-mail</h1><p>Hello, " +
 			username +
