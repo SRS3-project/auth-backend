@@ -4,7 +4,7 @@ WORKDIR /usr/src/auth-backend
 COPY . .
 
 #RUN apk add --update python3-dev build-base # for gyp
-RUN npm install
+RUN npm ci
 
 ENTRYPOINT [ "npm", "start" ]
 
