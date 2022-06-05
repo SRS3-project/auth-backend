@@ -827,5 +827,5 @@ app.get("/refresh", async (req, res) => {
 const port = parseInt(process.env.PORT) || 8081;
 app.listen(port, async () => {
 	console.log(`HTTP Server listening on port ${port}...`);
-	console.log(process.env.FRONTEND_HOST)
+
 });
