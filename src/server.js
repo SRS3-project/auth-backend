@@ -438,21 +438,18 @@ app.get("/confirmemail", async (req, res) => {
 	if (!token) {
 		return res
 			.status(401)
-			.json({ message: "Unauthorized. No token in request" });
+			.render("pages/unauthorized");
 	}
 
 	if (token.length < 64) {
-		return res.status(401).json({ message: "Unauthorized" });
+		return res.status(401).render("pages/unauthorized");
 	}
 
 	try {
 		tokenRef = await firestore.collection("confirmTokens").doc(token).get();
 
 		if (!tokenRef.exists) {
-			return res.status(401).json({
-				message:
-					"Unauthorized. The token does not exist in our database",
-			});
+			return res.status(401).render("pages/unauthorized");
 		} else {
 			//invalida qui il token. Come?
 			usernameTrovato = tokenRef.data().username;
@@ -474,7 +471,7 @@ app.get("/confirmemail", async (req, res) => {
 					});
 				}
 				if (snapshot.empty) {
-					return res.status(401).json({ message: "Unauthorized" });
+					return res.status(401).render("pages/unauthorized");
 				}
 				firestore
 					.collection("users")
@@ -486,10 +483,7 @@ app.get("/confirmemail", async (req, res) => {
 					.update({ alreadyUsed: true });
 			} catch (err) {
 				console.log(err);
-				res.status(500).json({
-					message:
-						"Error in confirming the e-mail address, please try again later",
-				});
+				res.status(500).render("pages/500");
 				return;
 			}
 
@@ -497,7 +491,7 @@ app.get("/confirmemail", async (req, res) => {
 		}
 	} catch (err) {
 		console.log(err);
-		return res.status(500);
+		return res.status(500).render("pages/500");
 	}
 });
 
