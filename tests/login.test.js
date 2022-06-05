@@ -63,8 +63,8 @@ describe('POST /login', () =>{
     it('POST /login right username and password', async() => {
       
       const credenziali = {
-        username: "andreasalvuccivero2",
-        password: "Test1234!"
+        username: "utenteFinto6",
+        password: "Test123!"
       }
       const res = await request.post('/login')
       
@@ -76,4 +76,18 @@ describe('POST /login', () =>{
        expect(res.body.accessToken).toBeDefined()
        expect(res.body.roles).toBeDefined();
     })
+  })
+
+  it('POST /login deleted user login fails', async() => {
+      
+    const credenziali = {
+      username: "utenteFinto7",
+      password: "Test123!"
+    }
+    const res = await request.post('/login')
+    
+    .set('Accept','application/json')
+    .send(credenziali)
+    .expect('Content-Type', /json/)
+    .expect(400)
   })
